@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <AssemblyName>ExamBuilderGR</AssemblyName>
+    <RootNamespace>ExamBuilderGR</RootNamespace>
+    <Version>0.7.2-rc.3</Version>
+    <InformationalVersion>0.7.2-rc.3</InformationalVersion>
+    <AssemblyVersion>0.7.2.0</AssemblyVersion>
+    <FileVersion>0.7.2.0</FileVersion>
+    <Authors>Μάριος Γιακαλάρας</Authors>
+    <Product>ExamBuilder GR</Product>
+    <Description>Εφαρμογή δημιουργίας διαγωνισμάτων, τεστ και κλειδιών λύσεων.</Description>
+    <Copyright>Copyright © Μάριος Γιακαλάρας 2026</Copyright>
+  </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="Assets\ExamBuilderGR_Icon_1024.png" />
+    <Resource Include="Assets\ExamBuilderGR_Logo_Horizontal.png" />
+    <Resource Include="Assets\ExamBuilderGR_Logo_Horizontal_Dark.png" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,124 @@
+name: Build Windows Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore ExamBuilderGR.sln
+
+      - name: Read version
+        id: version
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content "ExamBuilderGR/ExamBuilderGR.csproj"
+          $version = $project.Project.PropertyGroup.Version | Select-Object -First 1
+          if ([string]::IsNullOrWhiteSpace($version)) { throw "Version not found in csproj." }
+          "app_version=$version" >> $env:GITHUB_OUTPUT
+          "tag_name=v$version" >> $env:GITHUB_OUTPUT
+
+      - name: Publish self-contained portable folder
+        shell: pwsh
+        run: |
+          dotnet publish ExamBuilderGR/ExamBuilderGR.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=false `
+            -p:PublishTrimmed=false `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            --output artifacts/portable
+
+          Copy-Item README.md artifacts/portable/README.md
+          Copy-Item CHANGELOG.md artifacts/portable/CHANGELOG.md
+          Copy-Item docs/START_HERE.txt artifacts/portable/START_HERE.txt
+
+      - name: Publish self-contained single-file EXE
+        shell: pwsh
+        run: |
+          dotnet publish ExamBuilderGR/ExamBuilderGR.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:PublishTrimmed=false `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            --output artifacts/single-file
+
+          Copy-Item README.md artifacts/single-file/README.md
+          Copy-Item CHANGELOG.md artifacts/single-file/CHANGELOG.md
+          Copy-Item docs/START_HERE.txt artifacts/single-file/START_HERE.txt
+
+      - name: Create ZIP packages and checksums
+        id: package
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.app_version }}"
+          $portableZip = "ExamBuilderGR_v${version}_win-x64_portable.zip"
+          $singleZip = "ExamBuilderGR_v${version}_win-x64_single-file.zip"
+
+          Compress-Archive -Path "artifacts/portable/*" -DestinationPath "artifacts/$portableZip" -Force
+          Compress-Archive -Path "artifacts/single-file/*" -DestinationPath "artifacts/$singleZip" -Force
+
+          $hashes = @()
+          foreach ($file in @("artifacts/$portableZip", "artifacts/$singleZip")) {
+            $hash = Get-FileHash $file -Algorithm SHA256
+            $hashes += "$($hash.Hash)  $([System.IO.Path]::GetFileName($file))"
+          }
+          $hashes | Set-Content "artifacts/SHA256SUMS.txt" -Encoding UTF8
+
+          "portable_zip=$portableZip" >> $env:GITHUB_OUTPUT
+          "single_zip=$singleZip" >> $env:GITHUB_OUTPUT
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ExamBuilderGR-windows-release
+          path: |
+            artifacts/*.zip
+            artifacts/SHA256SUMS.txt
+          retention-days: 30
+
+      - name: Create GitHub Release for tag
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $args = @(
+            "release", "create", $tag,
+            "artifacts/${{ steps.package.outputs.portable_zip }}",
+            "artifacts/${{ steps.package.outputs.single_zip }}",
+            "artifacts/SHA256SUMS.txt",
+            "--title", "ExamBuilder GR $tag",
+            "--generate-notes"
+          )
+
+          if ($tag -match '(?i)(alpha|beta|rc|preview)') {
+            $args += "--prerelease"
+          }
+
+          gh @args

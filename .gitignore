@@ -1,0 +1,29 @@
+# Visual Studio / .NET
+.vs/
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build / publish outputs
+publish/
+dist/
+artifacts/
+*.pdb
+
+# Test / coverage
+TestResults/
+coverage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp
+
+# Local application data and user-created exams
+*.exam.json
+school-profile.json
+school-logo.*
