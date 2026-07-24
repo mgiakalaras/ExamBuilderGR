@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -26,6 +26,7 @@ public sealed class ExamQuestion : INotifyPropertyChanged
     private ObservableCollection<MatchingLeftItem> _matchingLeftItems = new();
     private ObservableCollection<MatchingRightItem> _matchingRightItems = new();
     private ObservableCollection<MatchingRelation> _matchingRelations = new();
+    private ObservableCollection<ExamImageAsset> _images = new();
     private int _matchingShuffleSeed = Random.Shared.Next(1, int.MaxValue);
 
     public ExamQuestion()
@@ -37,6 +38,7 @@ public sealed class ExamQuestion : INotifyPropertyChanged
         WireMatchingRightItems(_matchingRightItems);
         WireMatchingRelations(_matchingRelations);
         WireMatchingPairs(_matchingPairs);
+        WireImages(_images);
     }
 
     public string Code { get => _code; set => Set(ref _code, value ?? string.Empty); }
@@ -157,6 +159,20 @@ public sealed class ExamQuestion : INotifyPropertyChanged
         }
     }
 
+
+    public ObservableCollection<ExamImageAsset> Images
+    {
+        get => _images;
+        set
+        {
+            if (ReferenceEquals(_images, value)) return;
+            UnwireImages(_images);
+            _images = value ?? new ObservableCollection<ExamImageAsset>();
+            WireImages(_images);
+            Raise();
+        }
+    }
+
     public int MatchingShuffleSeed
     {
         get => _matchingShuffleSeed;
@@ -227,6 +243,8 @@ public sealed class ExamQuestion : INotifyPropertyChanged
     private void UnwireMatchingRelations(ObservableCollection<MatchingRelation> items) => UnwireCollection(items, MatchingRelations_CollectionChanged);
     private void WireMatchingPairs(ObservableCollection<MatchingPair> items) => WireCollection(items, MatchingPairs_CollectionChanged);
     private void UnwireMatchingPairs(ObservableCollection<MatchingPair> items) => UnwireCollection(items, MatchingPairs_CollectionChanged);
+    private void WireImages(ObservableCollection<ExamImageAsset> items) => WireCollection(items, Images_CollectionChanged);
+    private void UnwireImages(ObservableCollection<ExamImageAsset> items) => UnwireCollection(items, Images_CollectionChanged);
 
     private void WireCollection<T>(ObservableCollection<T> items, NotifyCollectionChangedEventHandler handler)
         where T : INotifyPropertyChanged
@@ -249,6 +267,7 @@ public sealed class ExamQuestion : INotifyPropertyChanged
     private void MatchingRightItems_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => HandleNestedCollectionChanged(e, nameof(MatchingRightItems));
     private void MatchingRelations_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => HandleNestedCollectionChanged(e, nameof(MatchingRelations));
     private void MatchingPairs_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => HandleNestedCollectionChanged(e, nameof(MatchingPairs));
+    private void Images_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => HandleNestedCollectionChanged(e, nameof(Images));
 
     private void HandleNestedCollectionChanged(NotifyCollectionChangedEventArgs e, string propertyName)
     {
@@ -271,6 +290,7 @@ public sealed class ExamQuestion : INotifyPropertyChanged
             MatchingRightItem => nameof(MatchingRightItems),
             MatchingRelation => nameof(MatchingRelations),
             MatchingPair => nameof(MatchingPairs),
+            ExamImageAsset => nameof(Images),
             _ => null
         };
 

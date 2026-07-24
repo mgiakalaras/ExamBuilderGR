@@ -1,0 +1,4 @@
+ExamBuilder GR v1.0.0 - Final Stable Project
+
+Canonical baseline for the first stable public release.
+Includes source, GitHub Actions, portable/single-file publishing, Windows installer, documentation and release scripts.

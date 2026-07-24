@@ -1,0 +1,294 @@
+﻿<Window x:Class="ExamBuilderGR.Views.HelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Βοήθεια και Οδηγός Χρήσης — ExamBuilder GR"
+        Height="820" Width="1180" MinHeight="680" MinWidth="980"
+        WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style x:Key="HelpNavigationItem" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="11,9"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Root" Background="{TemplateBinding Background}"
+                                BorderBrush="Transparent" BorderThickness="3,0,0,0"
+                                CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource PanelAltBackgroundBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="HelpSectionCard" TargetType="Border" BasedOn="{StaticResource PanelBorder}">
+            <Setter Property="Padding" Value="22"/>
+            <Setter Property="Margin" Value="0,0,0,18"/>
+        </Style>
+
+        <Style x:Key="HelpSectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+
+        <Style x:Key="HelpSubTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,14,0,5"/>
+        </Style>
+
+        <Style x:Key="HelpStepCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource PanelAltBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="7"/>
+            <Setter Property="Padding" Value="13"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+
+        <Style x:Key="HelpNote" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="7"/>
+            <Setter Property="Padding" Value="14"/>
+            <Setter Property="Margin" Value="0,12,0,0"/>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Background="{DynamicResource AppBackgroundBrush}">
+        <Border DockPanel.Dock="Top" Background="{DynamicResource ToolbarBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="18,13">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="48" Height="48" CornerRadius="9" Background="White" Padding="4"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                    <Image Source="/ExamBuilderGR;component/Assets/ExamBuilderGR_Icon_1024.png" Stretch="Uniform"/>
+                </Border>
+                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="Βοήθεια και Οδηγός Χρήσης" FontSize="22" FontWeight="SemiBold"/>
+                    <TextBlock Text="Από τις αρχικές ρυθμίσεις μέχρι την αποθήκευση, το PDF και την εκτύπωση"
+                               Style="{StaticResource MutedText}" Margin="0,3,0,0"/>
+                </StackPanel>
+                <Button Grid.Column="2" Content="Κλείσιμο" Style="{StaticResource SecondaryButton}"
+                        MinWidth="105" VerticalAlignment="Center" Click="Close_Click"/>
+            </Grid>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource ToolbarBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="14,8">
+            <Grid>
+                <TextBlock Text="Συμβουλή: Πάτησε F1 οποιαδήποτε στιγμή για να ανοίξεις ξανά αυτόν τον οδηγό."
+                           Style="{StaticResource MutedText}"/>
+                <TextBlock HorizontalAlignment="Right" Text="{Binding VersionText}" Style="{StaticResource MutedText}"/>
+            </Grid>
+        </Border>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="{DynamicResource SidebarBackgroundBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0" Padding="12">
+                <DockPanel>
+                    <Border DockPanel.Dock="Bottom" Style="{StaticResource HelpNote}" Margin="0,12,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Γρήγορη συμβουλή" FontWeight="SemiBold"/>
+                            <TextBlock Text="Πριν από PDF ή εκτύπωση, χρησιμοποίησε πάντα τον Προέλεγχο."
+                                       Style="{StaticResource MutedText}" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <StackPanel DockPanel.Dock="Top" Margin="4,4,4,10">
+                        <TextBlock Text="ΠΕΡΙΕΧΟΜΕΝΑ" FontSize="10" FontWeight="SemiBold"
+                                   Style="{StaticResource MutedText}"/>
+                    </StackPanel>
+                    <ListBox x:Name="NavigationList" Background="Transparent" BorderThickness="0"
+                             SelectionChanged="NavigationList_SelectionChanged"
+                             ItemContainerStyle="{StaticResource HelpNavigationItem}">
+                        <ListBoxItem Tag="QuickStartSection" IsSelected="True">🚀 Γρήγορη εκκίνηση</ListBoxItem>
+                        <ListBoxItem Tag="FirstUseSection">🏫 Πρώτη χρήση και σχολείο</ListBoxItem>
+                        <ListBoxItem Tag="ExamSetupSection">📝 Στοιχεία διαγωνίσματος</ListBoxItem>
+                        <ListBoxItem Tag="StructureSection">🧩 Θέματα και υποερωτήματα</ListBoxItem>
+                        <ListBoxItem Tag="QuestionTypesSection">☑ Τύποι ερωτήσεων</ListBoxItem>
+                        <ListBoxItem Tag="ImagesSection">🖼 Εικόνες και διαγράμματα</ListBoxItem>
+                        <ListBoxItem Tag="AnswerKeySection">🔑 Κλειδί λύσεων</ListBoxItem>
+                        <ListBoxItem Tag="PreviewSection">🖨 Προεπισκόπηση και εκτύπωση</ListBoxItem>
+                        <ListBoxItem Tag="StorageSection">💾 Αποθήκευση και επανάχρηση</ListBoxItem>
+                        <ListBoxItem Tag="ShortcutsSection">⌨ Συντομεύσεις και FAQ</ListBoxItem>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <ScrollViewer x:Name="HelpScrollViewer" Grid.Column="1" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled" Padding="28,24,34,32">
+                <StackPanel MaxWidth="850" HorizontalAlignment="Center">
+                    <Border x:Name="QuickStartSection" Style="{StaticResource HelpSectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Γρήγορη εκκίνηση: δημιουργία διαγωνίσματος σε 10 βήματα"
+                                       Style="{StaticResource HelpSectionTitle}"/>
+                            <TextBlock Text="Ακολούθησε τη σειρά αυτή για να δημιουργήσεις ένα πλήρες διαγώνισμα χωρίς να χαθείς στις επιλογές."
+                                       Style="{StaticResource MutedText}" Margin="0,0,0,16"/>
+
+                            <Border Style="{StaticResource HelpStepCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentBrush}" VerticalAlignment="Top"><TextBlock Text="1" Foreground="{DynamicResource ButtonTextBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1"><TextBlock Text="Συμπλήρωσε τις Ρυθμίσεις σχολείου" FontWeight="SemiBold"/><TextBlock Text="Όνομα σχολείου, καθηγητής, σχολικό έτος και προαιρετικό λογότυπο. Τα στοιχεία αποθηκεύονται μία φορά και επαναχρησιμοποιούνται." Style="{StaticResource MutedText}" Margin="0,3,0,0"/></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource HelpStepCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentBrush}" VerticalAlignment="Top"><TextBlock Text="2" Foreground="{DynamicResource ButtonTextBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1"><TextBlock Text="Πάτησε Νέο" FontWeight="SemiBold"/><TextBlock Text="Όρισε τίτλο, μάθημα, τάξη, τμήμα, κατεύθυνση, ημερομηνία, διάρκεια και τον αρχικό αριθμό θεμάτων." Style="{StaticResource MutedText}" Margin="0,3,0,0"/></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource HelpStepCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentBrush}" VerticalAlignment="Top"><TextBlock Text="3" Foreground="{DynamicResource ButtonTextBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1"><TextBlock Text="Έλεγξε τα Στοιχεία διαγωνίσματος" FontWeight="SemiBold"/><TextBlock Text="Συμπλήρωσε γενικές οδηγίες και ενεργοποίησε το προαιρετικό κλειδί λύσεων μόνο όταν το χρειάζεσαι." Style="{StaticResource MutedText}" Margin="0,3,0,0"/></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource HelpStepCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentBrush}" VerticalAlignment="Top"><TextBlock Text="4" Foreground="{DynamicResource ButtonTextBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1"><TextBlock Text="Οργάνωσε τα θέματα" FontWeight="SemiBold"/><TextBlock Text="Δημιούργησε ΘΕΜΑ Α, Β, Γ, Δ και πρόσθεσε κεντρική εκφώνηση ή εικόνες όταν χρειάζεται." Style="{StaticResource MutedText}" Margin="0,3,0,0"/></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource HelpStepCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentBrush}" VerticalAlignment="Top"><TextBlock Text="5" Foreground="{DynamicResource ButtonTextBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1"><TextBlock Text="Πρόσθεσε υποερωτήματα και μονάδες" FontWeight="SemiBold"/><TextBlock Text="Για παράδειγμα Α1: 10 μονάδες, Α2: 7 μονάδες, Α3: 8 μονάδες. Το σύνολο του θέματος υπολογίζεται αυτόματα." Style="{StaticResource MutedText}" Margin="0,3,0,0"/></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource HelpStepCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentBrush}" VerticalAlignment="Top"><TextBlock Text="6" Foreground="{DynamicResource ButtonTextBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1"><TextBlock Text="Επίλεξε τύπο ερώτησης" FontWeight="SemiBold"/><TextBlock Text="Ανάπτυξης, Σωστό/Λάθος, Πολλαπλής, Συμπλήρωση κενού ή Αντιστοίχιση. Συμπλήρωσε τις σωστές απαντήσεις για το κλειδί." Style="{StaticResource MutedText}" Margin="0,3,0,0"/></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource HelpStepCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentBrush}" VerticalAlignment="Top"><TextBlock Text="7" Foreground="{DynamicResource ButtonTextBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1"><TextBlock Text="Όρισε χώρο απάντησης και εικόνες" FontWeight="SemiBold"/><TextBlock Text="Χρησιμοποίησε γραμμές, κενό πλαίσιο ή καθόλου χώρο. Στην καρτέλα Εικόνες όρισε θέση, μέγεθος, σειρά και αρίθμηση." Style="{StaticResource MutedText}" Margin="0,3,0,0"/></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource HelpStepCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentBrush}" VerticalAlignment="Top"><TextBlock Text="8" Foreground="{DynamicResource ButtonTextBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1"><TextBlock Text="Έλεγξε την προεπισκόπηση Α4" FontWeight="SemiBold"/><TextBlock Text="Μετακινήσου στις σελίδες και έλεγξε αλλαγές σελίδας, χώρους απαντήσεων, εικόνες και τελικό πλαίσιο βαθμολογίας." Style="{StaticResource MutedText}" Margin="0,3,0,0"/></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource HelpStepCard}"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentBrush}" VerticalAlignment="Top"><TextBlock Text="9" Foreground="{DynamicResource ButtonTextBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><StackPanel Grid.Column="1"><TextBlock Text="Τρέξε τον Προέλεγχο" FontWeight="SemiBold"/><TextBlock Text="Διόρθωσε σφάλματα μονάδων, κενές εκφωνήσεις, ελλιπείς απαντήσεις και προβλήματα στο κλειδί λύσεων." Style="{StaticResource MutedText}" Margin="0,3,0,0"/></StackPanel></Grid></Border>
+                            <Border Style="{StaticResource HelpStepCard}" Margin="0"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="42"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border Width="30" Height="30" CornerRadius="15" Background="{DynamicResource AccentBrush}" VerticalAlignment="Top"><TextBlock Text="10" Foreground="{DynamicResource ButtonTextBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10"/></Border><StackPanel Grid.Column="1"><TextBlock Text="Αποθήκευσε και εξήγαγε" FontWeight="SemiBold"/><TextBlock Text="Αποθήκευσε το επεξεργάσιμο αρχείο, δημιούργησε PDF ή εκτύπωσε. Προαιρετικά αποθήκευσε το διαγώνισμα ως πρότυπο." Style="{StaticResource MutedText}" Margin="0,3,0,0"/></StackPanel></Grid></Border>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="FirstUseSection" Style="{StaticResource HelpSectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Πρώτη χρήση και στοιχεία σχολείου" Style="{StaticResource HelpSectionTitle}"/>
+                            <TextBlock Text="Άνοιξε Περισσότερα → Ρυθμίσεις σχολείου. Τα στοιχεία χρησιμοποιούνται αυτόματα σε κάθε νέο διαγώνισμα." Style="{StaticResource MutedText}"/>
+                            <TextBlock Text="Τι συμπληρώνεις" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="• Ονομασία και υπότιτλο σχολείου&#x0a;• Διεύθυνση, τηλέφωνο και email&#x0a;• Ονοματεπώνυμο καθηγητή και ειδικότητα&#x0a;• Σχολικό έτος και προεπιλεγμένο θέμα εμφάνισης"/>
+                            <TextBlock Text="Λογότυπο σχολείου" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Επίλεξε PNG, JPG, JPEG ή BMP. Μπορείς να ορίσεις θέση, πλάτος, ασπρόμαυρη απόδοση ή να το αποκρύψεις. Η εφαρμογή κρατά δικό της αντίγραφο, ώστε να μη χαθεί αν μετακινήσεις το αρχικό αρχείο."/>
+                            <Border Style="{StaticResource HelpNote}"><TextBlock Text="Τα στοιχεία σχολείου αλλάζουν μόνο όταν χρειάζεται. Δεν χρειάζεται να τα συμπληρώνεις σε κάθε διαγώνισμα."/></Border>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="ExamSetupSection" Style="{StaticResource HelpSectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Στοιχεία διαγωνίσματος" Style="{StaticResource HelpSectionTitle}"/>
+                            <TextBlock Text="Στην κεντρική καρτέλα Στοιχεία διαγωνίσματος συμπληρώνεις τα δεδομένα που αφορούν το συγκεκριμένο έγγραφο." Style="{StaticResource MutedText}"/>
+                            <TextBlock Text="Βασικά πεδία" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="• Τίτλος και μάθημα&#x0a;• Τάξη, τμήμα και προαιρετική κατεύθυνση/προσανατολισμός&#x0a;• Ημερομηνία και διάρκεια&#x0a;• Γενικές οδηγίες προς τους μαθητές"/>
+                            <TextBlock Text="Κλειδί λύσεων" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Ενεργοποίησε τη δημιουργία κλειδιού λύσεων από εδώ. Τότε γίνονται διαθέσιμα η προεπισκόπηση, το PDF και η εκτύπωση λύσεων."/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="StructureSection" Style="{StaticResource HelpSectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Θέματα, ερωτήματα και υποερωτήματα" Style="{StaticResource HelpSectionTitle}"/>
+                            <TextBlock Text="Το αριστερό panel δείχνει τη δομή του διαγωνίσματος. Κάθε θέμα μπορεί να έχει κεντρική εκφώνηση και πολλά βαθμολογούμενα υποερωτήματα." Style="{StaticResource MutedText}"/>
+                            <TextBlock Text="Παράδειγμα" Style="{StaticResource HelpSubTitle}"/>
+                            <Border Style="{StaticResource HelpNote}"><TextBlock FontFamily="Consolas" Text="ΘΕΜΑ Α — 25 μονάδες&#x0a;Α1 — 10 μονάδες&#x0a;Α2 — 7 μονάδες&#x0a;Α3 — 8 μονάδες"/></Border>
+                            <TextBlock Text="Οι μονάδες του θέματος προκύπτουν από το άθροισμα των υποερωτημάτων. Το συνολικό διαγώνισμα πρέπει να φτάνει τις 100 μονάδες." Margin="0,12,0,0"/>
+                            <TextBlock Text="Ρυθμίσεις θέματος" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Από το γρανάζι δίπλα στο θέμα αλλάζεις τίτλο, κεντρική εκφώνηση και εικόνες που αφορούν ολόκληρο το θέμα και όχι ένα συγκεκριμένο υποερώτημα."/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="QuestionTypesSection" Style="{StaticResource HelpSectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Τύποι ερωτήσεων" Style="{StaticResource HelpSectionTitle}"/>
+                            <TextBlock Text="Ο editor προσαρμόζεται αυτόματα στον τύπο που επιλέγεις." Style="{StaticResource MutedText}"/>
+                            <TextBlock Text="Ανάπτυξης" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Γράψε την εκφώνηση, όρισε γραμμές ή κενό πλαίσιο και προαιρετικά συμπλήρωσε ενδεικτική απάντηση για το κλειδί."/>
+                            <TextBlock Text="Σωστό / Λάθος" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Πρόσθεσε όσες προτάσεις χρειάζεσαι και διάλεξε την ορθή τιμή κάθε πρότασης. Η επιλογή δεν εμφανίζεται στο μαθητικό έντυπο."/>
+                            <TextBlock Text="Πολλαπλής επιλογής" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Πρόσθεσε επιλογές και όρισε μία σωστή απάντηση. Στο διαγώνισμα εμφανίζονται κενά σημεία επιλογής, ενώ στο κλειδί επισημαίνεται η σωστή."/>
+                            <TextBlock Text="Συμπλήρωση κενού" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Γράψε μία ή περισσότερες προτάσεις. Επίλεξε με το ποντίκι μία λέξη ή φράση και πάτησε Κάνε κενό. Μπορείς να δημιουργήσεις πολλά κενά στην ίδια πρόταση."/>
+                            <TextBlock Text="Αντιστοίχιση" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Συμπλήρωσε ανεξάρτητα τις Στήλες Α και Β και όρισε τις σωστές σχέσεις. Επιτρέπονται πολλαπλές αντιστοιχίσεις και παραπλανητικές επιλογές. Η τυχαία διάταξη αποθηκεύεται και παραμένει ίδια σε preview, PDF και κλειδί."/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="ImagesSection" Style="{StaticResource HelpSectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Εικόνες και διαγράμματα" Style="{StaticResource HelpSectionTitle}"/>
+                            <TextBlock Text="Η καρτέλα Εικόνες συγκεντρώνει τις εικόνες του θέματος και του επιλεγμένου υποερωτήματος." Style="{StaticResource MutedText}"/>
+                            <TextBlock Text="Δυνατότητες" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="• Προσθήκη PNG, JPG/JPEG, BMP ή GIF&#x0a;• Επιλογή θέσης πριν ή μετά την εκφώνηση&#x0a;• Στοίχιση αριστερά, κέντρο ή δεξιά&#x0a;• Ρύθμιση πλάτους σε εκατοστά&#x0a;• Προαιρετική λεζάντα&#x0a;• Εμφάνιση ή απόκρυψη από το κλειδί λύσεων&#x0a;• Πολλές εικόνες στην ίδια σειρά"/>
+                            <TextBlock Text="Ομάδες εικόνων" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Μπορείς να τοποθετήσεις έως τέσσερις εικόνες δίπλα-δίπλα και να χρησιμοποιήσεις σήμανση α), β), γ), δ) ή Εικόνα 1, Εικόνα 2 κ.λπ."/>
+                            <Border Style="{StaticResource HelpNote}"><TextBlock Text="Οι εικόνες ενσωματώνονται μέσα στο αρχείο του διαγωνίσματος. Έτσι δεν χάνονται όταν το αρχείο μεταφερθεί σε άλλον υπολογιστή."/></Border>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="AnswerKeySection" Style="{StaticResource HelpSectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Προαιρετικό κλειδί λύσεων" Style="{StaticResource HelpSectionTitle}"/>
+                            <TextBlock Text="Το κλειδί ενεργοποιείται από τα Στοιχεία διαγωνίσματος. Οι σωστές απαντήσεις καταχωρίζονται μέσα στον editor κάθε τύπου ερώτησης." Style="{StaticResource MutedText}"/>
+                            <TextBlock Text="Τι περιλαμβάνει" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="• Ενδεικτικές απαντήσεις ανάπτυξης&#x0a;• Σωστές τιμές Σ/Λ&#x0a;• Σωστή επιλογή πολλαπλής&#x0a;• Λέξεις και φράσεις των κενών&#x0a;• Αντιστοιχίσεις με βάση την τελική τυχαία σειρά"/>
+                            <TextBlock Text="Προβολή και εκτύπωση" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Ενεργοποίησε την Προβολή κλειδιού πάνω από την προεπισκόπηση Α4. Από το μενού Εξαγωγή δημιουργείς ξεχωριστό PDF ή εκτύπωση λύσεων."/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="PreviewSection" Style="{StaticResource HelpSectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Προεπισκόπηση, προέλεγχος, PDF και εκτύπωση" Style="{StaticResource HelpSectionTitle}"/>
+                            <TextBlock Text="Η δεξιά προεπισκόπηση είναι σελιδοποιημένη Α4 και χρησιμοποιεί το ίδιο έγγραφο με την εκτύπωση και το PDF." Style="{StaticResource MutedText}"/>
+                            <TextBlock Text="Πριν από την εξαγωγή" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="1. Έλεγξε όλες τις σελίδες.&#x0a;2. Βεβαιώσου ότι κανένα θέμα ή εικόνα δεν κόβεται άσχημα.&#x0a;3. Πάτησε Προέλεγχος.&#x0a;4. Διόρθωσε όλα τα σφάλματα. Οι προειδοποιήσεις μπορούν να παρακαμφθούν όταν είναι σκόπιμες."/>
+                            <TextBlock Text="PDF" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Η εξαγωγή χρησιμοποιεί τον Microsoft Print to PDF των Windows. Επίλεξε τοποθεσία και όνομα αρχείου στο παράθυρο εκτύπωσης."/>
+                            <TextBlock Text="Πραγματική εκτύπωση" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Επίλεξε τον εκτυπωτή, τον αριθμό αντιγράφων και τις προτιμήσεις του. Η προεπισκόπηση προσαρμόζεται στην πραγματική εκτυπώσιμη περιοχή."/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="StorageSection" Style="{StaticResource HelpSectionCard}">
+                        <StackPanel>
+                            <TextBlock Text="Αποθήκευση, πρότυπα, βιβλιοθήκη και backup" Style="{StaticResource HelpSectionTitle}"/>
+                            <TextBlock Text="Η εφαρμογή διατηρεί τα επεξεργάσιμα διαγωνίσματα και τα βοηθητικά δεδομένα στον φάκελο Έγγραφα του χρήστη." Style="{StaticResource MutedText}"/>
+                            <TextBlock Text="Αποθήκευση" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Χρησιμοποίησε Ctrl+S ή το κουμπί Αποθήκευση. Το αρχείο κρατά θέματα, απαντήσεις, εικόνες και ρυθμίσεις ώστε να μπορεί να επεξεργαστεί ξανά."/>
+                            <TextBlock Text="Πρότυπα" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Αποθήκευσε μία χρήσιμη δομή ως πρότυπο. Όταν τη χρησιμοποιήσεις, δημιουργείται νέο ανεξάρτητο διαγώνισμα και το αρχικό πρότυπο δεν μεταβάλλεται."/>
+                            <TextBlock Text="Βιβλιοθήκη ερωτήσεων" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Αποθήκευσε επιλεγμένες ερωτήσεις για επανάχρηση σε άλλα διαγωνίσματα. Η εισαγόμενη ερώτηση γίνεται ανεξάρτητο αντίγραφο."/>
+                            <TextBlock Text="Αντίγραφο ασφαλείας" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Από Περισσότερα → Δημιουργία αντιγράφου ασφαλείας ZIP μπορείς να συγκεντρώσεις τα δεδομένα της εφαρμογής σε ένα αρχείο backup."/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="ShortcutsSection" Style="{StaticResource HelpSectionCard}" Margin="0">
+                        <StackPanel>
+                            <TextBlock Text="Συντομεύσεις και συχνές ερωτήσεις" Style="{StaticResource HelpSectionTitle}"/>
+                            <TextBlock Text="Συντομεύσεις πληκτρολογίου" Style="{StaticResource HelpSubTitle}"/>
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="120"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                <TextBlock Text="Ctrl + N" FontWeight="SemiBold" Margin="0,3"/><TextBlock Grid.Column="1" Text="Νέο διαγώνισμα" Margin="0,3"/>
+                                <TextBlock Grid.Row="1" Text="Ctrl + O" FontWeight="SemiBold" Margin="0,3"/><TextBlock Grid.Row="1" Grid.Column="1" Text="Άνοιγμα αρχείου" Margin="0,3"/>
+                                <TextBlock Grid.Row="2" Text="Ctrl + S" FontWeight="SemiBold" Margin="0,3"/><TextBlock Grid.Row="2" Grid.Column="1" Text="Αποθήκευση" Margin="0,3"/>
+                                <TextBlock Grid.Row="3" Text="F1" FontWeight="SemiBold" Margin="0,3"/><TextBlock Grid.Row="3" Grid.Column="1" Text="Άνοιγμα Βοήθειας" Margin="0,3"/>
+                            </Grid>
+                            <TextBlock Text="Γιατί οι μονάδες εμφανίζονται λάθος;" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Έλεγξε τις μονάδες κάθε υποερωτήματος. Το σύνολο κάθε θέματος και ολόκληρου του διαγωνίσματος υπολογίζεται αυτόματα."/>
+                            <TextBlock Text="Γιατί δεν είναι διαθέσιμο το PDF λύσεων;" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Πρέπει πρώτα να ενεργοποιήσεις τη Δημιουργία προαιρετικού κλειδιού λύσεων στα Στοιχεία διαγωνίσματος."/>
+                            <TextBlock Text="Γιατί δεν εμφανίζεται η εικόνα;" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Έλεγξε αν ανήκει στο σωστό θέμα ή υποερώτημα, αν έχει επιλεγεί σωστή θέση εμφάνισης και αν το πλάτος της χωρά στη σελίδα."/>
+                            <TextBlock Text="Πού βρίσκονται τα αρχεία μου;" Style="{StaticResource HelpSubTitle}"/>
+                            <TextBlock Text="Χρησιμοποίησε Περισσότερα → Άνοιγμα φακέλου δεδομένων ή Άνοιγμα φακέλου διαγωνισμάτων."/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </DockPanel>
+</Window>

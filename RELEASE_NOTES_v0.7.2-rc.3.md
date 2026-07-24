@@ -20,3 +20,14 @@
 
 Η έκδοση είναι Release Candidate. Συνιστάται δοκιμή σε δεύτερο υπολογιστή και
 έλεγχος όλων των τύπων ερωτήσεων πριν χαρακτηριστεί σταθερή έκδοση 1.0.0.
+
+
+## Διανομή Windows
+
+Το τελικό project περιλαμβάνει scripts για:
+
+- Portable self-contained ZIP.
+- Single-file self-contained ZIP.
+- Installer Inno Setup `ExamBuilderGR_Setup_v0.7.2-rc.3.exe`.
+- Αυτόματο SHA-256 checksum.
+- Προαιρετικό upload των installer assets στο GitHub Release.

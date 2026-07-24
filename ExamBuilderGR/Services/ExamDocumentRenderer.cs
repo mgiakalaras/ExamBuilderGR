@@ -1,5 +1,6 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Media;
 using ExamBuilderGR.Models;
@@ -365,7 +366,9 @@ public sealed class ExamDocumentRenderer
             KeepWithNext = true
         });
 
+        AddImageBlocks(document, section.Images, ExamImagePlacement.BeforeText, contentWidth, answerKey: false);
         AddSectionIntro(document, section);
+        AddImageBlocks(document, section.Images, ExamImagePlacement.AfterText, contentWidth, answerKey: false);
 
         foreach (var question in section.Questions)
         {
@@ -388,6 +391,8 @@ public sealed class ExamDocumentRenderer
                     break;
             }
         }
+
+        AddImageBlocks(document, section.Images, ExamImagePlacement.EndOfItem, contentWidth, answerKey: false);
     }
 
     private static void AddSectionIntro(FlowDocument document, ExamSection section)
@@ -405,19 +410,25 @@ public sealed class ExamDocumentRenderer
 
     private static void AddDevelopmentQuestion(FlowDocument document, ExamQuestion question, double contentWidth)
     {
+        AddImageBlocks(document, question.Images, ExamImagePlacement.BeforeText, contentWidth, answerKey: false);
         AddQuestionHeading(document, question, contentWidth, question.Text);
+        AddImageBlocks(document, question.Images, ExamImagePlacement.AfterText, contentWidth, answerKey: false);
         AddAnswerArea(document, question, contentWidth);
+        AddImageBlocks(document, question.Images, ExamImagePlacement.EndOfItem, contentWidth, answerKey: false);
         AddQuestionSpacer(document);
     }
 
     private static void AddFillBlankQuestion(FlowDocument document, ExamQuestion question, double contentWidth, bool answerKey)
     {
         question.NormalizeLegacyStructures();
+        AddImageBlocks(document, question.Images, ExamImagePlacement.BeforeText, contentWidth, answerKey);
         AddQuestionHeading(document, question, contentWidth, question.Text);
+        AddImageBlocks(document, question.Images, ExamImagePlacement.AfterText, contentWidth, answerKey);
 
         if (question.FillBlankSentences.Count == 0)
         {
             document.Blocks.Add(AnswerParagraph("Δεν έχουν καταχωριστεί προτάσεις συμπλήρωσης κενού."));
+            AddImageBlocks(document, question.Images, ExamImagePlacement.EndOfItem, contentWidth, answerKey);
             AddQuestionSpacer(document);
             return;
         }
@@ -443,12 +454,15 @@ public sealed class ExamDocumentRenderer
             }
         }
 
+        AddImageBlocks(document, question.Images, ExamImagePlacement.EndOfItem, contentWidth, answerKey);
         AddQuestionSpacer(document);
     }
 
     private static void AddTrueFalseQuestion(FlowDocument document, ExamQuestion question, double contentWidth, bool answerKey)
     {
+        AddImageBlocks(document, question.Images, ExamImagePlacement.BeforeText, contentWidth, answerKey);
         AddQuestionHeading(document, question, contentWidth, question.Text);
+        AddImageBlocks(document, question.Images, ExamImagePlacement.AfterText, contentWidth, answerKey);
 
         var table = new Table { CellSpacing = 0, Margin = new Thickness(0, 3, 0, 5) };
         table.Columns.Add(new TableColumn { Width = new GridLength(32) });
@@ -487,12 +501,15 @@ public sealed class ExamDocumentRenderer
         }
 
         document.Blocks.Add(table);
+        AddImageBlocks(document, question.Images, ExamImagePlacement.EndOfItem, contentWidth, answerKey);
         AddQuestionSpacer(document);
     }
 
     private static void AddMultipleChoiceQuestion(FlowDocument document, ExamQuestion question, double contentWidth, bool answerKey)
     {
+        AddImageBlocks(document, question.Images, ExamImagePlacement.BeforeText, contentWidth, answerKey);
         AddQuestionHeading(document, question, contentWidth, question.Text);
+        AddImageBlocks(document, question.Images, ExamImagePlacement.AfterText, contentWidth, answerKey);
 
         var options = question.MultipleChoiceOptions.ToList();
         if (options.Count == 0)
@@ -500,6 +517,7 @@ public sealed class ExamDocumentRenderer
             document.Blocks.Add(AnswerParagraph(answerKey
                 ? "Δεν έχουν καταχωριστεί επιλογές ή σωστή απάντηση."
                 : "Δεν έχουν καταχωριστεί επιλογές απάντησης."));
+            AddImageBlocks(document, question.Images, ExamImagePlacement.EndOfItem, contentWidth, answerKey);
             AddQuestionSpacer(document);
             return;
         }
@@ -543,13 +561,16 @@ public sealed class ExamDocumentRenderer
                 : "Σωστή απάντηση: " + string.Join(" | ", correctAnswers)));
         }
 
+        AddImageBlocks(document, question.Images, ExamImagePlacement.EndOfItem, contentWidth, answerKey);
         AddQuestionSpacer(document);
     }
 
     private static void AddMatchingQuestion(FlowDocument document, ExamQuestion question, double contentWidth, bool answerKey)
     {
         question.NormalizeLegacyStructures();
+        AddImageBlocks(document, question.Images, ExamImagePlacement.BeforeText, contentWidth, answerKey);
         AddQuestionHeading(document, question, contentWidth, question.Text);
+        AddImageBlocks(document, question.Images, ExamImagePlacement.AfterText, contentWidth, answerKey);
 
         var displayedLeft = DeterministicShuffle(question.MatchingLeftItems, question.MatchingShuffleSeed, avoidOriginalOrder: true);
         var rightSeed = unchecked((question.MatchingShuffleSeed * 397) ^ 0x5F3759DF);
@@ -625,6 +646,7 @@ public sealed class ExamDocumentRenderer
             document.Blocks.Add(AnswerParagraph("Σωστές αντιστοιχίσεις: " + string.Join("   |   ", mappings)));
         }
 
+        AddImageBlocks(document, question.Images, ExamImagePlacement.EndOfItem, contentWidth, answerKey);
         AddQuestionSpacer(document);
     }
 
@@ -652,6 +674,195 @@ public sealed class ExamDocumentRenderer
         cell.BorderThickness = new Thickness(0.5);
         cell.Padding = new Thickness(5, 4, 5, 4);
         return cell;
+    }
+
+    private static void AddImageBlocks(
+        FlowDocument document,
+        IEnumerable<ExamImageAsset> images,
+        ExamImagePlacement placement,
+        double contentWidth,
+        bool answerKey)
+    {
+        var allImages = images.ToList();
+        var candidates = allImages
+            .Where(image => image.Placement == placement && (!answerKey || image.ShowInAnswerKey))
+            .ToList();
+
+        if (candidates.Count == 0) return;
+
+        var processedInlineGroups = new HashSet<int>();
+
+        foreach (var asset in candidates)
+        {
+            if (asset.Layout == ExamImageLayout.Standalone)
+            {
+                AddStandaloneImageBlock(document, asset, contentWidth,
+                    GetAutomaticImageLabel(asset, allImages.IndexOf(asset) + 1, allImages.IndexOf(asset)));
+                continue;
+            }
+
+            if (!processedInlineGroups.Add(asset.RowGroup)) continue;
+
+            var group = candidates
+                .Where(image => image.Layout == ExamImageLayout.InlineRow && image.RowGroup == asset.RowGroup)
+                .ToList();
+
+            for (var offset = 0; offset < group.Count; offset += 4)
+            {
+                var row = group.Skip(offset).Take(4).ToList();
+                AddInlineImageRow(document, row, allImages, contentWidth, offset);
+            }
+        }
+    }
+
+    private static void AddStandaloneImageBlock(
+        FlowDocument document,
+        ExamImageAsset asset,
+        double contentWidth,
+        string automaticLabel)
+    {
+        var source = ExamImageService.CreateBitmapSource(asset.DataBase64);
+        if (source is null) return;
+
+        var requestedWidth = Math.Clamp(asset.WidthCm, 2.0, 17.5) * DipPerCentimeter;
+        var imageWidth = Math.Min(contentWidth, requestedWidth);
+        var panel = CreateImagePanel(asset, source, imageWidth, automaticLabel);
+
+        var host = new Grid { Width = contentWidth };
+        panel.HorizontalAlignment = asset.Alignment switch
+        {
+            ExamImageAlignment.Left => HorizontalAlignment.Left,
+            ExamImageAlignment.Right => HorizontalAlignment.Right,
+            _ => HorizontalAlignment.Center
+        };
+        host.Children.Add(panel);
+
+        document.Blocks.Add(new BlockUIContainer(host)
+        {
+            Margin = new Thickness(0, 5, 0, 6)
+        });
+    }
+
+    private static void AddInlineImageRow(
+        FlowDocument document,
+        IReadOnlyList<ExamImageAsset> row,
+        IList<ExamImageAsset> allImages,
+        double contentWidth,
+        int groupOffset)
+    {
+        if (row.Count == 0) return;
+
+        var uniformGrid = new UniformGrid
+        {
+            Columns = row.Count,
+            Width = contentWidth,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
+
+        var availableCellWidth = Math.Max(80d, contentWidth / row.Count - 10d);
+
+        for (var index = 0; index < row.Count; index++)
+        {
+            var asset = row[index];
+            var source = ExamImageService.CreateBitmapSource(asset.DataBase64);
+            if (source is null) continue;
+
+            var requestedWidth = Math.Clamp(asset.WidthCm, 2.0, 17.5) * DipPerCentimeter;
+            var imageWidth = Math.Min(availableCellWidth, requestedWidth);
+            var label = GetAutomaticImageLabel(
+                asset,
+                allImages.IndexOf(asset) + 1,
+                groupOffset + index);
+
+            var cell = new Grid
+            {
+                Margin = new Thickness(4, 0, 4, 0),
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+
+            var panel = CreateImagePanel(asset, source, imageWidth, label);
+            panel.HorizontalAlignment = asset.Alignment switch
+            {
+                ExamImageAlignment.Left => HorizontalAlignment.Left,
+                ExamImageAlignment.Right => HorizontalAlignment.Right,
+                _ => HorizontalAlignment.Center
+            };
+            cell.Children.Add(panel);
+            uniformGrid.Children.Add(cell);
+        }
+
+        document.Blocks.Add(new BlockUIContainer(uniformGrid)
+        {
+            Margin = new Thickness(0, 5, 0, 8)
+        });
+    }
+
+    private static StackPanel CreateImagePanel(
+        ExamImageAsset asset,
+        ImageSource source,
+        double imageWidth,
+        string automaticLabel)
+    {
+        var image = new Image
+        {
+            Source = source,
+            Width = imageWidth,
+            MaxHeight = 19d * DipPerCentimeter,
+            Stretch = Stretch.Uniform,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            SnapsToDevicePixels = true
+        };
+
+        var panel = new StackPanel
+        {
+            Width = imageWidth,
+            VerticalAlignment = VerticalAlignment.Top
+        };
+        panel.Children.Add(image);
+
+        var caption = BuildImageCaption(automaticLabel, asset.Caption);
+        if (!string.IsNullOrWhiteSpace(caption))
+        {
+            panel.Children.Add(new TextBlock
+            {
+                Text = caption,
+                FontFamily = new FontFamily("Arial"),
+                FontSize = 8.5,
+                FontStyle = FontStyles.Italic,
+                Foreground = Brushes.DimGray,
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Center,
+                Margin = new Thickness(0, 3, 0, 0)
+            });
+        }
+
+        return panel;
+    }
+
+    private static string GetAutomaticImageLabel(ExamImageAsset asset, int globalIndex, int rowIndex)
+    {
+        return asset.LabelStyle switch
+        {
+            ExamImageLabelStyle.GreekLetters => $"{GetGreekImageLabel(rowIndex)})",
+            ExamImageLabelStyle.FigureNumbers => $"Εικόνα {globalIndex}",
+            _ => string.Empty
+        };
+    }
+
+    private static string GetGreekImageLabel(int index)
+    {
+        string[] labels = ["α", "β", "γ", "δ", "ε", "στ", "ζ", "η", "θ", "ι", "κ", "λ"];
+        return index >= 0 && index < labels.Length ? labels[index] : (index + 1).ToString();
+    }
+
+    private static string BuildImageCaption(string automaticLabel, string caption)
+    {
+        var cleanCaption = caption?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(automaticLabel)) return cleanCaption;
+        if (string.IsNullOrWhiteSpace(cleanCaption)) return automaticLabel;
+        return automaticLabel.StartsWith("Εικόνα", StringComparison.Ordinal)
+            ? $"{automaticLabel}: {cleanCaption}"
+            : $"{automaticLabel} {cleanCaption}";
     }
 
     private static void AddQuestionHeading(FlowDocument document, ExamQuestion question, double contentWidth, string? text)
@@ -731,7 +942,9 @@ public sealed class ExamDocumentRenderer
             KeepWithNext = true
         });
 
+        AddImageBlocks(document, section.Images, ExamImagePlacement.BeforeText, contentWidth, answerKey: true);
         AddSectionIntro(document, section);
+        AddImageBlocks(document, section.Images, ExamImagePlacement.AfterText, contentWidth, answerKey: true);
 
         foreach (var question in section.Questions)
         {
@@ -750,14 +963,19 @@ public sealed class ExamDocumentRenderer
                     AddMultipleChoiceQuestion(document, question, contentWidth, answerKey: true);
                     break;
                 default:
+                    AddImageBlocks(document, question.Images, ExamImagePlacement.BeforeText, contentWidth, answerKey: true);
                     AddQuestionHeading(document, question, contentWidth, question.Text);
+                    AddImageBlocks(document, question.Images, ExamImagePlacement.AfterText, contentWidth, answerKey: true);
                     document.Blocks.Add(AnswerParagraph(string.IsNullOrWhiteSpace(question.ModelAnswer)
                         ? "Δεν έχει καταχωριστεί ενδεικτική απάντηση."
                         : question.ModelAnswer));
+                    AddImageBlocks(document, question.Images, ExamImagePlacement.EndOfItem, contentWidth, answerKey: true);
                     AddQuestionSpacer(document);
                     break;
             }
         }
+
+        AddImageBlocks(document, section.Images, ExamImagePlacement.EndOfItem, contentWidth, answerKey: true);
     }
 
     private static Paragraph AnswerParagraph(string text) => new(new Run(text))

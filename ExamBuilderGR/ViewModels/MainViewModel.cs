@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -31,6 +31,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _statusMessage = "Έτοιμο";
     private string _selectedTheme = "Classic Light";
     private bool _isDirty;
+    private int _workspaceTabIndex = 1;
     private string _cleanExamSnapshot = string.Empty;
 
     public SchoolProfile School
@@ -101,6 +102,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
     public bool HasSelectedQuestion => SelectedQuestion is not null;
+
+    public int WorkspaceTabIndex
+    {
+        get => _workspaceTabIndex;
+        set => Set(ref _workspaceTabIndex, Math.Clamp(value, 0, 2));
+    }
     public string TotalStatus => Exam.TotalPoints == 100 ? "Οι μονάδες είναι σωστές." : $"Απομένουν {100 - Exam.TotalPoints:+#;-#;0} μονάδες για το 100.";
     public string StatusMessage { get => _statusMessage; set => Set(ref _statusMessage, value); }
     public string AppSignature => AppInfo.ShortSignature;
@@ -177,6 +184,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ICommand SaveQuestionToLibraryCommand { get; }
     public ICommand OpenQuestionLibraryCommand { get; }
     public ICommand AboutCommand { get; }
+    public ICommand HelpCommand { get; }
 
     public event EventHandler? PreviewInvalidated;
 
@@ -213,6 +221,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         SaveQuestionToLibraryCommand = new RelayCommand(async _ => await SaveQuestionToLibraryAsync());
         OpenQuestionLibraryCommand = new RelayCommand(_ => OpenQuestionLibrary());
         AboutCommand = new RelayCommand(_ => OpenAbout());
+        HelpCommand = new RelayCommand(_ => OpenHelp());
 
         NormalizeExam(Exam);
         WireExam(Exam);
@@ -492,6 +501,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
         dialog.ShowDialog();
     }
 
+    private static void OpenHelp()
+    {
+        var dialog = new HelpWindow
+        {
+            Owner = Application.Current.MainWindow
+        };
+        dialog.ShowDialog();
+    }
+
     private async Task EditSchoolSettingsAsync()
     {
         var dialog = new SchoolSettingsWindow(School) { Owner = Application.Current.MainWindow };
@@ -520,6 +538,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         Exam.Sections.Add(section);
         SelectedSection = section;
         SelectedQuestion = section.Questions[0];
+        WorkspaceTabIndex = 1;
         RefreshTotals();
         StatusMessage = $"Προστέθηκε το {section.Title}";
     }
@@ -567,6 +586,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         section.Questions.Add(question);
         SelectedSection = section;
         SelectedQuestion = question;
+        WorkspaceTabIndex = 1;
         RefreshTotals();
         StatusMessage = $"Προστέθηκε η ερώτηση {question.Code}";
     }
@@ -736,6 +756,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         if (question is null) return;
         SelectedQuestion = question;
+        WorkspaceTabIndex = 1;
     }
 
     private static string GetSectionPrefix(ExamSection section)

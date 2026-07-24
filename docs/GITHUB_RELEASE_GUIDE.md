@@ -16,7 +16,7 @@ gh auth login
 powershell -ExecutionPolicy Bypass -File .\scripts\github-first-push.ps1 -Visibility public
 ```
 
-Το tag `v0.7.2-rc.3` ενεργοποιεί το workflow `.github/workflows/release.yml`.
+Το tag `v0.7.3-rc.4` ενεργοποιεί το workflow `.github/workflows/release.yml`.
 Το GitHub θα δημιουργήσει αυτόματα:
 
 - Portable self-contained ZIP

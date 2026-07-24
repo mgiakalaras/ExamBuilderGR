@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using ExamBuilderGR.Models;
 
 namespace ExamBuilderGR.Services;
@@ -44,6 +44,8 @@ public sealed class ExamValidationService
             if (section.TotalPoints <= 0)
                 issues.Add(Error(sectionName, "Το άθροισμα των μονάδων του θέματος πρέπει να είναι μεγαλύτερο από μηδέν."));
 
+            ValidateImages(issues, section.Images, sectionName + " / Εικόνες θέματος");
+
             var duplicateCodes = section.Questions
                 .Where(question => !string.IsNullOrWhiteSpace(question.Code))
                 .GroupBy(question => question.Code.Trim(), StringComparer.CurrentCultureIgnoreCase)
@@ -85,6 +87,8 @@ public sealed class ExamValidationService
             issues.Add(Error(location, "Η εκφώνηση είναι κενή."));
         if (question.Points <= 0)
             issues.Add(Error(location, "Οι μονάδες της ερώτησης πρέπει να είναι μεγαλύτερες από μηδέν."));
+
+        ValidateImages(issues, question.Images, location + " / Εικόνες");
 
         switch (question.Type)
         {
@@ -168,6 +172,54 @@ public sealed class ExamValidationService
                 if (correctCount != 1)
                     issues.Add(Error(location, $"Πρέπει να υπάρχει ακριβώς μία σωστή επιλογή. Βρέθηκαν: {correctCount}."));
                 break;
+        }
+    }
+
+
+    private static void ValidateImages(
+        ICollection<ValidationIssue> issues,
+        IEnumerable<ExamImageAsset> images,
+        string location)
+    {
+        var imageList = images.ToList();
+        var index = 0;
+        foreach (var image in imageList)
+        {
+            index++;
+            var imageLocation = $"{location} / Εικόνα {index}";
+
+            if (string.IsNullOrWhiteSpace(image.DataBase64))
+            {
+                issues.Add(Error(imageLocation, "Η εικόνα δεν περιέχει δεδομένα."));
+                continue;
+            }
+
+            try
+            {
+                var bytes = Convert.FromBase64String(image.DataBase64);
+                if (bytes.Length == 0)
+                    issues.Add(Error(imageLocation, "Η εικόνα είναι κενή."));
+                else if (bytes.Length > 5 * 1024 * 1024)
+                    issues.Add(Warning(imageLocation, "Η εικόνα ξεπερνά τα 5 MB και θα αυξήσει αρκετά το μέγεθος του αρχείου."));
+            }
+            catch (FormatException)
+            {
+                issues.Add(Error(imageLocation, "Τα αποθηκευμένα δεδομένα της εικόνας είναι κατεστραμμένα."));
+            }
+
+            if (image.WidthCm is < 2.0 or > 17.5)
+                issues.Add(Warning(imageLocation, "Το πλάτος της εικόνας πρέπει να είναι από 2 έως 17,5 cm."));
+        }
+
+        foreach (var group in imageList
+                     .Where(image => image.Layout == ExamImageLayout.InlineRow)
+                     .GroupBy(image => new { image.Placement, image.RowGroup }))
+        {
+            if (group.Count() == 1)
+            {
+                issues.Add(Warning(location,
+                    $"Η ομάδα εικόνων {group.Key.RowGroup} περιέχει μόνο μία εικόνα. Πρόσθεσε δεύτερη εικόνα στην ίδια ομάδα ή επίλεξε «Μόνη της»."));
+            }
         }
     }
 

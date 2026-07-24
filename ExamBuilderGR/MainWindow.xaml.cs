@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Threading;
@@ -242,4 +242,27 @@ public partial class MainWindow : Window
             _viewModel.StatusMessage = "Η εξαγωγή του κλειδιού απέτυχε.";
         }
     }
+    private void OpenSectionSettings_Click(object sender, RoutedEventArgs e)
+    {
+        ExamSection? section = null;
+
+        if (sender is FrameworkElement element)
+        {
+            section = element.Tag as ExamSection ?? element.DataContext as ExamSection;
+        }
+
+        section ??= _viewModel.SelectedSection;
+        if (section is null) return;
+
+        _viewModel.SelectedSection = section;
+
+        var dialog = new SectionSettingsWindow(section)
+        {
+            Owner = this
+        };
+
+        dialog.ShowDialog();
+        RebuildPreview();
+    }
+
 }

@@ -15,10 +15,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET 8 SDK
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
@@ -32,8 +34,11 @@ jobs:
           [xml]$project = Get-Content "ExamBuilderGR/ExamBuilderGR.csproj"
           $version = $project.Project.PropertyGroup.Version | Select-Object -First 1
           if ([string]::IsNullOrWhiteSpace($version)) { throw "Version not found in csproj." }
+          $numbers = [regex]::Matches($version, '\d+') | ForEach-Object { [int]$_.Value }
+          while ($numbers.Count -lt 4) { $numbers += 0 }
+          $binaryVersion = ($numbers | Select-Object -First 4) -join '.'
           "app_version=$version" >> $env:GITHUB_OUTPUT
-          "tag_name=v$version" >> $env:GITHUB_OUTPUT
+          "binary_version=$binaryVersion" >> $env:GITHUB_OUTPUT
 
       - name: Publish self-contained portable folder
         shell: pwsh
@@ -71,33 +76,75 @@ jobs:
           Copy-Item CHANGELOG.md artifacts/single-file/CHANGELOG.md
           Copy-Item docs/START_HERE.txt artifacts/single-file/START_HERE.txt
 
-      - name: Create ZIP packages and checksums
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.app_version }}"
+          $binaryVersion = "${{ steps.version.outputs.binary_version }}"
+          $portable = (Resolve-Path "artifacts/portable").Path
+          $isccCandidates = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles(x86)}\Inno Setup 7\ISCC.exe",
+            "$env:ProgramFiles\Inno Setup 7\ISCC.exe"
+          )
+          $iscc = $isccCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) { throw "ISCC.exe was not found after installing Inno Setup." }
+
+          & $iscc `
+            "/DMyAppVersion=$version" `
+            "/DMyBinaryVersion=$binaryVersion" `
+            "/DSourceDir=$portable" `
+            "installer/ExamBuilderGR.iss"
+
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed." }
+
+      - name: Create release packages and checksums
         id: package
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.app_version }}"
           $portableZip = "ExamBuilderGR_v${version}_win-x64_portable.zip"
           $singleZip = "ExamBuilderGR_v${version}_win-x64_single-file.zip"
+          $sourceZip = "ExamBuilderGR_v${version}_Source.zip"
 
           Compress-Archive -Path "artifacts/portable/*" -DestinationPath "artifacts/$portableZip" -Force
           Compress-Archive -Path "artifacts/single-file/*" -DestinationPath "artifacts/$singleZip" -Force
+          git archive --format=zip --output "artifacts/$sourceZip" HEAD
 
-          $hashes = @()
-          foreach ($file in @("artifacts/$portableZip", "artifacts/$singleZip")) {
+          $installer = Get-ChildItem "dist/installer" -Filter "ExamBuilderGR_Setup_v*.exe" | Select-Object -First 1
+          if (-not $installer) { throw "Installer EXE was not created." }
+          Copy-Item $installer.FullName "artifacts/$($installer.Name)" -Force
+
+          $releaseFiles = @(
+            "artifacts/$portableZip",
+            "artifacts/$singleZip",
+            "artifacts/$sourceZip",
+            "artifacts/$($installer.Name)"
+          )
+
+          $hashes = foreach ($file in $releaseFiles) {
             $hash = Get-FileHash $file -Algorithm SHA256
-            $hashes += "$($hash.Hash)  $([System.IO.Path]::GetFileName($file))"
+            "$($hash.Hash)  $([System.IO.Path]::GetFileName($file))"
           }
-          $hashes | Set-Content "artifacts/SHA256SUMS.txt" -Encoding UTF8
+          $hashes | Set-Content "artifacts/SHA256SUMS.txt" -Encoding ASCII
 
           "portable_zip=$portableZip" >> $env:GITHUB_OUTPUT
           "single_zip=$singleZip" >> $env:GITHUB_OUTPUT
+          "source_zip=$sourceZip" >> $env:GITHUB_OUTPUT
+          "installer_name=$($installer.Name)" >> $env:GITHUB_OUTPUT
 
       - name: Upload workflow artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v6
         with:
           name: ExamBuilderGR-windows-release
           path: |
             artifacts/*.zip
+            artifacts/*.exe
             artifacts/SHA256SUMS.txt
           retention-days: 30
 
@@ -108,14 +155,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = "${{ github.ref_name }}"
+          $notes = "RELEASE_NOTES_v1.0.0.md"
           $args = @(
             "release", "create", $tag,
             "artifacts/${{ steps.package.outputs.portable_zip }}",
             "artifacts/${{ steps.package.outputs.single_zip }}",
+            "artifacts/${{ steps.package.outputs.source_zip }}",
+            "artifacts/${{ steps.package.outputs.installer_name }}",
             "artifacts/SHA256SUMS.txt",
             "--title", "ExamBuilder GR $tag",
-            "--generate-notes"
+            "--verify-tag"
           )
+
+          if (Test-Path $notes) {
+            $args += @("--notes-file", $notes)
+          }
+          else {
+            $args += "--generate-notes"
+          }
 
           if ($tag -match '(?i)(alpha|beta|rc|preview)') {
             $args += "--prerelease"

@@ -10,10 +10,12 @@ public sealed class ExamSection : INotifyPropertyChanged
     private string _title = "ΘΕΜΑ Α";
     private string _introText = string.Empty;
     private ObservableCollection<ExamQuestion> _questions = new();
+    private ObservableCollection<ExamImageAsset> _images = new();
 
     public ExamSection()
     {
         WireQuestions(_questions);
+        WireImages(_images);
     }
 
     /// <summary>
@@ -37,6 +39,20 @@ public sealed class ExamSection : INotifyPropertyChanged
             WireQuestions(_questions);
             Raise();
             RefreshTotal();
+        }
+    }
+
+
+    public ObservableCollection<ExamImageAsset> Images
+    {
+        get => _images;
+        set
+        {
+            if (ReferenceEquals(_images, value)) return;
+            UnwireImages(_images);
+            _images = value ?? new ObservableCollection<ExamImageAsset>();
+            WireImages(_images);
+            Raise();
         }
     }
 
@@ -81,6 +97,30 @@ public sealed class ExamSection : INotifyPropertyChanged
         if (e.PropertyName == nameof(ExamQuestion.Points))
             RefreshTotal();
     }
+
+
+    private void WireImages(ObservableCollection<ExamImageAsset> images)
+    {
+        images.CollectionChanged += OnImagesChanged;
+        foreach (var image in images) image.PropertyChanged += Image_PropertyChanged;
+    }
+
+    private void UnwireImages(ObservableCollection<ExamImageAsset> images)
+    {
+        images.CollectionChanged -= OnImagesChanged;
+        foreach (var image in images) image.PropertyChanged -= Image_PropertyChanged;
+    }
+
+    private void OnImagesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems is not null)
+            foreach (ExamImageAsset image in e.OldItems) image.PropertyChanged -= Image_PropertyChanged;
+        if (e.NewItems is not null)
+            foreach (ExamImageAsset image in e.NewItems) image.PropertyChanged += Image_PropertyChanged;
+        Raise(nameof(Images));
+    }
+
+    private void Image_PropertyChanged(object? sender, PropertyChangedEventArgs e) => Raise(nameof(Images));
 
     private void Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
     {

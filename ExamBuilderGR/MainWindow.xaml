@@ -1,9 +1,10 @@
-<Window x:Class="ExamBuilderGR.MainWindow"
+﻿<Window x:Class="ExamBuilderGR.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:models="clr-namespace:ExamBuilderGR.Models"
+        xmlns:views="clr-namespace:ExamBuilderGR.Views"
         mc:Ignorable="d"
         Title="{Binding WindowTitle}" Height="920" Width="1600" MinWidth="1240" MinHeight="760"
         WindowStartupLocation="CenterScreen">
@@ -11,6 +12,7 @@
         <KeyBinding Key="N" Modifiers="Control" Command="{Binding NewExamCommand}"/>
         <KeyBinding Key="O" Modifiers="Control" Command="{Binding OpenExamCommand}"/>
         <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveCommand}"/>
+        <KeyBinding Key="F1" Command="{Binding HelpCommand}"/>
     </Window.InputBindings>
     <DockPanel>
         <Border DockPanel.Dock="Top" Background="{DynamicResource ToolbarBackgroundBrush}"
@@ -85,10 +87,15 @@
                                 <MenuItem Header="Δημιουργία αντιγράφου ασφαλείας ZIP" Command="{Binding CreateBackupCommand}"/>
                                 <Separator/>
                                 <MenuItem Header="Ρυθμίσεις σχολείου" Command="{Binding SchoolSettingsCommand}"/>
+                                <Separator/>
+                                <MenuItem Header="Βοήθεια και οδηγός χρήσης" Command="{Binding HelpCommand}" InputGestureText="F1"/>
                                 <MenuItem Header="Σχετικά με την εφαρμογή" Command="{Binding AboutCommand}"/>
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
+
+                    <Button Content="? Βοήθεια" Command="{Binding HelpCommand}"
+                            Style="{StaticResource SecondaryButton}" ToolTip="Βοήθεια και οδηγός χρήσης (F1)"/>
                     </StackPanel>
                 </ScrollViewer>
 
@@ -189,6 +196,7 @@
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                         <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                                     <Border Grid.Column="1" Background="{DynamicResource AccentSoftBrush}" CornerRadius="5"
@@ -198,7 +206,10 @@
                                                             <TextBlock Text=" μ."/>
                                                         </StackPanel>
                                                     </Border>
-                                                    <Button Grid.Column="2" Content="×" Padding="6,2" Margin="4,0,0,0"
+                                                    <Button Grid.Column="2" Content="⚙" Padding="7,2" Margin="4,0,0,0"
+                                                            ToolTip="Ρυθμίσεις θέματος" Style="{StaticResource SecondaryButton}"
+                                                            Click="OpenSectionSettings_Click"/>
+                                                    <Button Grid.Column="3" Content="×" Padding="6,2" Margin="4,0,0,0"
                                                             ToolTip="Διαγραφή θέματος" Style="{StaticResource DangerButton}"
                                                             Command="{Binding DataContext.DeleteSectionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}"/>
@@ -241,438 +252,625 @@
                           ResizeBehavior="PreviousAndNext" ShowsPreview="True"/>
 
             <!-- EDITOR -->
-            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Background="{DynamicResource AppBackgroundBrush}">
-                <StackPanel Margin="18">
-                    <TextBlock Text="Επεξεργασία διαγωνίσματος" FontSize="22" FontWeight="SemiBold"/>
-                    <TextBlock Text="Συμπλήρωσε τα στοιχεία και επεξεργάσου το επιλεγμένο ερώτημα."
-                               Style="{StaticResource MutedText}" Margin="0,3,0,16"/>
+            <Grid Grid.Column="2" Background="{DynamicResource AppBackgroundBrush}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                    <Border Style="{StaticResource PanelBorder}" Padding="16" Margin="0,0,0,14">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                <Grid Grid.Row="0" Margin="18,14,18,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Χώρος εργασίας διαγωνίσματος" FontSize="22" FontWeight="SemiBold"/>
+                        <TextBlock Text="Τα στοιχεία, η επεξεργασία και οι εικόνες έχουν πλέον ξεχωριστές κεντρικές καρτέλες."
+                                   Style="{StaticResource MutedText}" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <Border Grid.Column="1" Background="{DynamicResource AccentSoftBrush}" CornerRadius="7"
+                            Padding="10,6" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <TextBlock FontWeight="SemiBold">
+                            <Run Text="{Binding Exam.TotalPoints, Mode=OneWay}"/>
+                            <Run Text=" / 100 μονάδες"/>
+                        </TextBlock>
+                    </Border>
+                </Grid>
+
+                <TabControl Grid.Row="1" Margin="18,0,18,8" Style="{StaticResource EditorTabControl}" SelectedIndex="{Binding WorkspaceTabIndex, Mode=TwoWay}">
+                    <TabItem Header="Στοιχεία διαγωνίσματος" Style="{StaticResource EditorTabItem}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
+                            <StackPanel MaxWidth="980" HorizontalAlignment="Stretch">
+                                <TextBlock Text="Στοιχεία και ρυθμίσεις διαγωνίσματος" FontSize="19" FontWeight="SemiBold"/>
+                                <TextBlock Text="Τα στοιχεία της εξέτασης και η δημιουργία του προαιρετικού κλειδιού λύσεων βρίσκονται συγκεντρωμένα εδώ."
+                                           Style="{StaticResource MutedText}" Margin="0,3,0,12"/>
+                                <Border Style="{StaticResource PanelBorder}" Padding="16">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Text="Τίτλος" Style="{StaticResource MutedText}"/>
+                                        <TextBox Grid.Row="1" Text="{Binding Exam.Title, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,12"/>
+                                        <TextBlock Grid.Column="1" Text="Μάθημα" Style="{StaticResource MutedText}"/>
+                                        <TextBox Grid.Column="1" Grid.Row="1" Text="{Binding Exam.Subject, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,12"/>
+                                        <TextBlock Grid.Column="2" Text="Ημερομηνία" Style="{StaticResource MutedText}"/>
+                                        <DatePicker Grid.Column="2" Grid.Row="1" SelectedDate="{Binding Exam.ExamDate}" Margin="0,5,0,12"/>
+
+                                        <TextBlock Grid.Row="2" Text="Τάξη" Style="{StaticResource MutedText}"/>
+                                        <TextBox Grid.Row="3" Text="{Binding Exam.Grade, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,12"/>
+                                        <TextBlock Grid.Column="1" Grid.Row="2" Text="Τμήμα" Style="{StaticResource MutedText}"/>
+                                        <TextBox Grid.Column="1" Grid.Row="3" Text="{Binding Exam.ClassSection, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,12"/>
+                                        <TextBlock Grid.Column="2" Grid.Row="2" Text="Κατεύθυνση / Προσανατολισμός" Style="{StaticResource MutedText}"/>
+                                        <TextBox Grid.Column="2" Grid.Row="3" Text="{Binding Exam.Orientation, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,12"/>
+
+                                        <TextBlock Grid.Row="4" Text="Διάρκεια (λεπτά)" Style="{StaticResource MutedText}"/>
+                                        <TextBox Grid.Row="5" Text="{Binding Exam.DurationMinutes, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,0"/>
+                                        <TextBlock Grid.Column="1" Grid.Row="4" Grid.ColumnSpan="2" Text="Γενικές οδηγίες" Style="{StaticResource MutedText}"/>
+                                        <TextBox Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="2"
+                                                 Text="{Binding Exam.Instructions, UpdateSourceTrigger=PropertyChanged}"
+                                                 Margin="0,5,0,0" MinHeight="80" AcceptsReturn="True" TextWrapping="Wrap"
+                                                 VerticalContentAlignment="Top"/>
+                                    </Grid>
+                                </Border>
+
+                                <Border Style="{StaticResource PanelBorder}" Padding="16" Margin="0,12,0,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Κλειδί λύσεων" FontWeight="SemiBold" FontSize="15"/>
+                                            <TextBlock Text="Η επιλογή αυτή ενεργοποιεί την προεπισκόπηση, την εκτύπωση και το PDF των λύσεων."
+                                                       Style="{StaticResource MutedText}" FontSize="11" Margin="0,3,16,0"/>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Content="Δημιουργία προαιρετικού κλειδιού λύσεων"
+                                                  IsChecked="{Binding Exam.GenerateAnswerKey}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem Header="Επεξεργασία" Style="{StaticResource EditorTabItem}">
+                        <Grid Margin="12">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="10"/>
+                                <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Text="Τίτλος" Style="{StaticResource MutedText}"/>
-                            <TextBox Grid.Row="1" Text="{Binding Exam.Title, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,12"/>
-                            <TextBlock Grid.Column="1" Text="Μάθημα" Style="{StaticResource MutedText}"/>
-                            <TextBox Grid.Column="1" Grid.Row="1" Text="{Binding Exam.Subject, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,12"/>
-                            <TextBlock Grid.Column="2" Text="Ημερομηνία" Style="{StaticResource MutedText}"/>
-                            <DatePicker Grid.Column="2" Grid.Row="1" SelectedDate="{Binding Exam.ExamDate}" Margin="0,5,0,12"/>
+                            <Border Grid.Row="0" Style="{StaticResource PanelBorder}" Padding="14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="170"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Επεξεργασία ερωτήματος" FontSize="17" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Η κεντρική εκφώνηση του θέματος προηγείται των υποερωτημάτων Α1, Α2, Α3 κ.λπ."
+                                                   Style="{StaticResource MutedText}" FontSize="11" Margin="0,3,0,10"/>
+                                        <TextBlock Text="Τίτλος θέματος" Style="{StaticResource MutedText}"/>
+                                        <TextBox Text="{Binding SelectedSection.Title, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,9"/>
+                                        <TextBlock Text="Κεντρική εκφώνηση / σενάριο" Style="{StaticResource MutedText}"/>
+                                        <TextBox Text="{Binding SelectedSection.IntroText, UpdateSourceTrigger=PropertyChanged}"
+                                                 MinHeight="76" AcceptsReturn="True" TextWrapping="Wrap" Margin="0,5,8,0"
+                                                 VerticalContentAlignment="Top"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Background="{DynamicResource AccentSoftBrush}" CornerRadius="7"
+                                            Padding="12" Margin="8,0,0,0" VerticalAlignment="Stretch">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Σύνολο θέματος" Style="{StaticResource MutedText}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SelectedSection.TotalPoints, Mode=OneWay}" FontSize="28"
+                                                       FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                            <TextBlock Text="μονάδες" HorizontalAlignment="Center"/>
+                                            <Button Content="⚙ Αναλυτικές ρυθμίσεις" Click="OpenSectionSettings_Click"
+                                                    Tag="{Binding SelectedSection}" Style="{StaticResource SecondaryButton}"
+                                                    HorizontalAlignment="Stretch" Margin="0,12,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </Border>
 
-                            <TextBlock Grid.Row="2" Text="Τάξη" Style="{StaticResource MutedText}"/>
-                            <TextBox Grid.Row="3" Text="{Binding Exam.Grade, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,12"/>
-                            <TextBlock Grid.Column="1" Grid.Row="2" Text="Τμήμα" Style="{StaticResource MutedText}"/>
-                            <TextBox Grid.Column="1" Grid.Row="3" Text="{Binding Exam.ClassSection, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,12"/>
-                            <TextBlock Grid.Column="2" Grid.Row="2" Text="Κατεύθυνση / Προσανατολισμός" Style="{StaticResource MutedText}"/>
-                            <TextBox Grid.Column="2" Grid.Row="3" Text="{Binding Exam.Orientation, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,12"/>
-
-                            <TextBlock Grid.Row="4" Text="Διάρκεια (λεπτά)" Style="{StaticResource MutedText}"/>
-                            <TextBox Grid.Row="5" Text="{Binding Exam.DurationMinutes, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,0"/>
-                            <TextBlock Grid.Column="1" Grid.Row="4" Grid.ColumnSpan="2" Text="Γενικές οδηγίες" Style="{StaticResource MutedText}"/>
-                            <TextBox Grid.Column="1" Grid.Row="5" Grid.ColumnSpan="2"
-                                     Text="{Binding Exam.Instructions, UpdateSourceTrigger=PropertyChanged}"
-                                     Margin="0,5,0,0" MinHeight="50" AcceptsReturn="True" TextWrapping="Wrap"
-                                     VerticalContentAlignment="Top"/>
-
-                            <CheckBox Grid.Row="6" Grid.ColumnSpan="3" Margin="0,14,0,0"
-                                      Content="Δημιουργία προαιρετικού κλειδιού λύσεων"
-                                      IsChecked="{Binding Exam.GenerateAnswerKey}"
-                                      ToolTip="Ενεργοποιεί την προεπισκόπηση και τις επιλογές εκτύπωσης/PDF του κλειδιού λύσεων."/>
-                        </Grid>
-                    </Border>
-
-                    <Border Style="{StaticResource PanelBorder}" Padding="16">
-                        <StackPanel>
-                            <DockPanel>
-                                <StackPanel>
-                                    <TextBlock Text="Επιλεγμένο ερώτημα" FontSize="17" FontWeight="SemiBold"/>
-                                    <TextBlock Text="Ο editor αλλάζει ανάλογα με τον τύπο της ερώτησης."
-                                               Style="{StaticResource MutedText}" FontSize="11"/>
-                                </StackPanel>
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                    <Button Content="Αποθήκευση στη βιβλιοθήκη"
-                                            Command="{Binding SaveQuestionToLibraryCommand}"
-                                            Style="{StaticResource SecondaryButton}"/>
-                                    <Button Content="Διαγραφή ερώτησης"
-                                            Command="{Binding DeleteQuestionCommand}" Style="{StaticResource DangerButton}"/>
-                                </StackPanel>
-                            </DockPanel>
-
-                            <Grid Margin="0,14,0,0">
+                            <Grid Grid.Row="2">
+                                <Grid.Style>
+                                    <Style TargetType="Grid">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasSelectedQuestion}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
+                <Border Style="{StaticResource PanelBorder}" Padding="0" Margin="0">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Padding="15,11" Background="{DynamicResource AccentSoftBrush}"
+                                CornerRadius="8,8,0,0">
+                            <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="95"/>
-                                    <ColumnDefinition Width="95"/>
-                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="Τίτλος θέματος" Style="{StaticResource MutedText}"/>
-                                    <TextBox Text="{Binding SelectedSection.Title, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,0"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="1">
-                                    <TextBlock Text="Κωδικός" Style="{StaticResource MutedText}"/>
-                                    <TextBox Text="{Binding SelectedQuestion.Code, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,0"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Μονάδες" Style="{StaticResource MutedText}"/>
-                                    <TextBox Text="{Binding SelectedQuestion.Points, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,8,0"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="3">
-                                    <TextBlock Text="Τύπος ερώτησης" Style="{StaticResource MutedText}"/>
-                                    <ComboBox ItemsSource="{Binding QuestionTypes}" DisplayMemberPath="Label" SelectedValuePath="Value"
-                                              SelectedValue="{Binding SelectedQuestion.Type}" Margin="0,5,0,0"/>
-                                </StackPanel>
-                            </Grid>
-
-                            <TextBlock Text="Κεντρική εκφώνηση θέματος (προαιρετική)"
-                                       Style="{StaticResource MutedText}" Margin="0,13,0,5"/>
-                            <TextBox Text="{Binding SelectedSection.IntroText, UpdateSourceTrigger=PropertyChanged}"
-                                     MinHeight="70" AcceptsReturn="True" TextWrapping="Wrap"
-                                     VerticalContentAlignment="Top"
-                                     ToolTip="Κοινή εκφώνηση ή σενάριο που εμφανίζεται μία φορά πριν από τα υποερωτήματα του θέματος."/>
-
-                            <Border Margin="0,10,0,0" Padding="10,7" CornerRadius="6"
-                                    Background="{DynamicResource AccentSoftBrush}">
-                                <DockPanel>
-                                    <TextBlock DockPanel.Dock="Right" FontWeight="Bold">
-                                        <Run Text="{Binding SelectedSection.TotalPoints, Mode=OneWay}"/>
+                                    <TextBlock Text="Επεξεργασία υποερωτήματος" FontSize="17" FontWeight="SemiBold"/>
+                                    <TextBlock Style="{StaticResource MutedText}" FontSize="11" Margin="0,3,0,0">
+                                        <Run Text="{Binding SelectedSection.Title, Mode=OneWay}"/>
+                                        <Run Text="  ›  "/>
+                                        <Run Text="{Binding SelectedQuestion.Code, Mode=OneWay}" FontWeight="SemiBold"/>
+                                        <Run Text="  ·  "/>
+                                        <Run Text="{Binding SelectedQuestion.Points, Mode=OneWay}" FontWeight="SemiBold"/>
                                         <Run Text=" μονάδες"/>
                                     </TextBlock>
-                                    <TextBlock Text="Σύνολο θέματος από τα υποερωτήματα" FontWeight="SemiBold"/>
-                                </DockPanel>
-                            </Border>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="☆ Βιβλιοθήκη" Command="{Binding SaveQuestionToLibraryCommand}"
+                                            Style="{StaticResource CompactSecondaryButton}"/>
+                                    <Button Content="× Διαγραφή" Command="{Binding DeleteQuestionCommand}"
+                                            Style="{StaticResource CompactDangerButton}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
 
-                            <!-- ΑΝΑΠΤΥΞΗΣ -->
-                            <StackPanel Margin="0,15,0,0">
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedQuestion.Type}" Value="{x:Static models:QuestionType.Development}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
-                                <TextBlock Text="Εκφώνηση" Style="{StaticResource MutedText}" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding SelectedQuestion.Text, UpdateSourceTrigger=PropertyChanged}"
-                                         MinHeight="125" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"
-                                         Background="{DynamicResource EditorBackgroundBrush}" FontFamily="Consolas"/>
-                                <Grid Margin="0,12,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="140"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Text="Χώρος απάντησης" Style="{StaticResource MutedText}"/>
-                                        <ComboBox ItemsSource="{Binding AnswerAreaTypes}" DisplayMemberPath="Label" SelectedValuePath="Value"
-                                                  SelectedValue="{Binding SelectedQuestion.AnswerAreaType}" Margin="0,5,8,0"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Text="Ύψος σε γραμμές" Style="{StaticResource MutedText}"/>
-                                        <TextBox Text="{Binding SelectedQuestion.AnswerLines, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,0"/>
-                                    </StackPanel>
-                                </Grid>
-                                <TextBlock Text="Ενδεικτική απάντηση για το κλειδί λύσεων (προαιρετική)" Style="{StaticResource MutedText}" Margin="0,12,0,5"/>
-                                <TextBox Text="{Binding SelectedQuestion.ModelAnswer, UpdateSourceTrigger=PropertyChanged}"
-                                         MinHeight="95" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"/>
-                            </StackPanel>
+                        <Grid Margin="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="300"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="225" MinWidth="205" MaxWidth="265"/>
+                            </Grid.ColumnDefinitions>
 
-                            <!-- ΣΩΣΤΟ / ΛΑΘΟΣ -->
-                            <StackPanel Margin="0,15,0,0">
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedQuestion.Type}" Value="{x:Static models:QuestionType.TrueFalse}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
-                                <TextBlock Text="Οδηγία ερώτησης" Style="{StaticResource MutedText}" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding SelectedQuestion.Text, UpdateSourceTrigger=PropertyChanged}"
-                                         MinHeight="65" AcceptsReturn="True" TextWrapping="Wrap"/>
-                                <TextBlock Text="Προτάσεις και σωστές απαντήσεις" FontWeight="SemiBold" Margin="0,12,0,6"/>
-                                <ItemsControl ItemsSource="{Binding SelectedQuestion.TrueFalseItems}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,3">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="130"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBox Text="{Binding Statement, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0"/>
-                                                <ComboBox Grid.Column="1"
-                                                          ItemsSource="{Binding DataContext.BooleanAnswers, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          DisplayMemberPath="Label" SelectedValuePath="Value"
-                                                          SelectedValue="{Binding IsTrue}" Margin="0,0,8,0"/>
-                                                <Button Grid.Column="2" Content="×" Style="{StaticResource DangerButton}" Padding="9,4"
-                                                        Command="{Binding DataContext.DeleteTrueFalseItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                        CommandParameter="{Binding}"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <Button Content="+ Προσθήκη πρότασης" Command="{Binding AddTrueFalseItemCommand}"
-                                        Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,8,0,0"/>
-                            </StackPanel>
-
-                            <!-- ΑΝΤΙΣΤΟΙΧΙΣΗΣ -->
-                            <StackPanel Margin="0,15,0,0">
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedQuestion.Type}" Value="{x:Static models:QuestionType.Matching}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
-
-                                <TextBlock Text="Οδηγία ερώτησης" Style="{StaticResource MutedText}" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding SelectedQuestion.Text, UpdateSourceTrigger=PropertyChanged}"
-                                         MinHeight="65" AcceptsReturn="True" TextWrapping="Wrap"/>
-
-                                <DockPanel Margin="0,12,0,7">
-                                    <Button DockPanel.Dock="Right" Content="↻ Νέα τυχαία διάταξη"
-                                            Command="{Binding ShuffleMatchingCommand}"
-                                            Style="{StaticResource SecondaryButton}"
-                                            ToolTip="Ανακατεύει ανεξάρτητα τις δύο στήλες. Η ίδια διάταξη διατηρείται σε preview, PDF και κλειδί λύσεων."/>
-                                    <StackPanel>
-                                        <TextBlock Text="Στοιχεία δύο στηλών" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Οι στήλες ανακατεύονται ανεξάρτητα στην εκτύπωση."
-                                                   Style="{StaticResource MutedText}" FontSize="11"/>
-                                    </StackPanel>
-                                </DockPanel>
-
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="12"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <Border Grid.Column="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                                            CornerRadius="6" Padding="10">
+                            <TabControl Grid.Column="0" Style="{StaticResource EditorTabControl}">
+                                <TabItem Header="Περιεχόμενο" Style="{StaticResource EditorTabItem}">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                                  Padding="14">
                                         <StackPanel>
-                                            <TextBlock Text="ΣΤΗΛΗ Α" FontWeight="Bold" Margin="0,0,0,6"/>
-                                            <ItemsControl ItemsSource="{Binding SelectedQuestion.MatchingLeftItems}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Grid Margin="0,3">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,7,0"/>
-                                                            <Button Grid.Column="1" Content="×" Style="{StaticResource DangerButton}" Padding="9,4"
-                                                                    Command="{Binding DataContext.DeleteMatchingLeftItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                    CommandParameter="{Binding}"/>
-                                                        </Grid>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                            <Button Content="+ Στοιχείο Στήλης Α" Command="{Binding AddMatchingLeftItemCommand}"
-                                                    Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,7,0,0"/>
-                                        </StackPanel>
-                                    </Border>
+                                            <!-- DEVELOPMENT: content only; answer space and model answer are in Settings. -->
+                                            <StackPanel>
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding SelectedQuestion.Type}" Value="{x:Static models:QuestionType.Development}">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Εκφώνηση ανάπτυξης" Style="{StaticResource EditorSectionTitle}"/>
+                                                <TextBlock Text="Γράψε την κύρια εκφώνηση. Ο χώρος απάντησης και η ενδεικτική λύση βρίσκονται στην καρτέλα Ρυθμίσεις &amp; λύση."
+                                                           Style="{StaticResource MutedText}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,9"/>
+                                                <TextBox Text="{Binding SelectedQuestion.Text, UpdateSourceTrigger=PropertyChanged}"
+                                                         MinHeight="180" AcceptsReturn="True" TextWrapping="Wrap"
+                                                         VerticalContentAlignment="Top" Background="{DynamicResource EditorBackgroundBrush}"
+                                                         FontFamily="Consolas"/>
+                                            </StackPanel>
 
-                                    <Border Grid.Column="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                                            CornerRadius="6" Padding="10">
-                                        <StackPanel>
-                                            <TextBlock Text="ΣΤΗΛΗ Β" FontWeight="Bold" Margin="0,0,0,6"/>
-                                            <ItemsControl ItemsSource="{Binding SelectedQuestion.MatchingRightItems}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Grid Margin="0,3">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,7,0"/>
-                                                            <Button Grid.Column="1" Content="×" Style="{StaticResource DangerButton}" Padding="9,4"
-                                                                    Command="{Binding DataContext.DeleteMatchingRightItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                    CommandParameter="{Binding}"/>
-                                                        </Grid>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                            <Button Content="+ Στοιχείο Στήλης Β" Command="{Binding AddMatchingRightItemCommand}"
-                                                    Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,7,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
+                                            <!-- TRUE / FALSE -->
+                                            <StackPanel>
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding SelectedQuestion.Type}" Value="{x:Static models:QuestionType.TrueFalse}">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Σωστό / Λάθος" Style="{StaticResource EditorSectionTitle}"/>
+                                                <TextBlock Text="Οδηγία ερώτησης" Style="{StaticResource MutedText}" Margin="0,8,0,5"/>
+                                                <TextBox Text="{Binding SelectedQuestion.Text, UpdateSourceTrigger=PropertyChanged}"
+                                                         MinHeight="65" AcceptsReturn="True" TextWrapping="Wrap"/>
+                                                <TextBlock Text="Προτάσεις και σωστές απαντήσεις" FontWeight="SemiBold" Margin="0,12,0,6"/>
+                                                <ItemsControl ItemsSource="{Binding SelectedQuestion.TrueFalseItems}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="0,3">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="130"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBox Text="{Binding Statement, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0"/>
+                                                                <ComboBox Grid.Column="1"
+                                                                          ItemsSource="{Binding DataContext.BooleanAnswers, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                          DisplayMemberPath="Label" SelectedValuePath="Value"
+                                                                          SelectedValue="{Binding IsTrue}" Margin="0,0,8,0"/>
+                                                                <Button Grid.Column="2" Content="×" Style="{StaticResource DangerButton}" Padding="9,4"
+                                                                        Command="{Binding DataContext.DeleteTrueFalseItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <Button Content="+ Προσθήκη πρότασης" Command="{Binding AddTrueFalseItemCommand}"
+                                                        Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+                                            </StackPanel>
 
-                                <TextBlock Text="Σωστές σχέσεις" FontWeight="SemiBold" Margin="0,14,0,5"/>
-                                <TextBlock Text="Για αντιστοίχιση ενός στοιχείου της Α με δύο ή περισσότερα στοιχεία της Β, πρόσθεσε ξεχωριστή σχέση για κάθε σωστή απάντηση."
-                                           Style="{StaticResource MutedText}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
-                                <ItemsControl ItemsSource="{Binding SelectedQuestion.MatchingRelations}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,3">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="38"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <ComboBox ItemsSource="{Binding DataContext.SelectedQuestion.MatchingLeftItems, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          DisplayMemberPath="Text" SelectedValuePath="Id"
-                                                          SelectedValue="{Binding LeftItemId, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,7,0"/>
-                                                <TextBlock Grid.Column="1" Text="→" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <ComboBox Grid.Column="2"
-                                                          ItemsSource="{Binding DataContext.SelectedQuestion.MatchingRightItems, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                          DisplayMemberPath="Text" SelectedValuePath="Id"
-                                                          SelectedValue="{Binding RightItemId, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,7,0"/>
-                                                <Button Grid.Column="3" Content="×" Style="{StaticResource DangerButton}" Padding="9,4"
-                                                        Command="{Binding DataContext.DeleteMatchingRelationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                        CommandParameter="{Binding}"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <Button Content="+ Προσθήκη σωστής σχέσης" Command="{Binding AddMatchingRelationCommand}"
-                                        Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,8,0,0"/>
-                            </StackPanel>
+                                            <!-- MATCHING -->
+                                            <StackPanel>
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding SelectedQuestion.Type}" Value="{x:Static models:QuestionType.Matching}">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Αντιστοίχιση" Style="{StaticResource EditorSectionTitle}"/>
+                                                <TextBlock Text="Οδηγία ερώτησης" Style="{StaticResource MutedText}" Margin="0,8,0,5"/>
+                                                <TextBox Text="{Binding SelectedQuestion.Text, UpdateSourceTrigger=PropertyChanged}"
+                                                         MinHeight="65" AcceptsReturn="True" TextWrapping="Wrap"/>
 
-                            <!-- ΠΟΛΛΑΠΛΗΣ ΕΠΙΛΟΓΗΣ -->
-                            <StackPanel Margin="0,15,0,0">
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedQuestion.Type}" Value="{x:Static models:QuestionType.MultipleChoice}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
-                                <TextBlock Text="Εκφώνηση ερώτησης" Style="{StaticResource MutedText}" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding SelectedQuestion.Text, UpdateSourceTrigger=PropertyChanged}"
-                                         MinHeight="75" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"/>
-                                <TextBlock Text="Επιλογές απάντησης — σημείωσε μία ως σωστή για το κλειδί λύσεων"
-                                           FontWeight="SemiBold" Margin="0,12,0,6"/>
-                                <ItemsControl ItemsSource="{Binding SelectedQuestion.MultipleChoiceOptions}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,3">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="90"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <RadioButton Content="Σωστή" VerticalAlignment="Center"
-                                                             IsChecked="{Binding IsCorrect, Mode=OneWay}"
-                                                             Command="{Binding DataContext.SetCorrectMultipleChoiceOptionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                             CommandParameter="{Binding}"/>
-                                                <TextBox Grid.Column="1" Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0"/>
-                                                <Button Grid.Column="2" Content="×" Style="{StaticResource DangerButton}" Padding="9,4"
-                                                        Command="{Binding DataContext.DeleteMultipleChoiceOptionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                        CommandParameter="{Binding}"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <TextBlock Text="Η σωστή επιλογή αποθηκεύεται μόνο στο κλειδί λύσεων και δεν επισημαίνεται στο μαθητικό έντυπο."
-                                           Style="{StaticResource MutedText}" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"/>
-                                <Button Content="+ Προσθήκη επιλογής" Command="{Binding AddMultipleChoiceOptionCommand}"
-                                        Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,8,0,0"/>
-                            </StackPanel>
-
-                            <!-- ΣΥΜΠΛΗΡΩΣΗΣ ΚΕΝΟΥ -->
-                            <StackPanel Margin="0,15,0,0">
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedQuestion.Type}" Value="{x:Static models:QuestionType.FillBlank}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
-
-                                <TextBlock Text="Οδηγία ερώτησης" Style="{StaticResource MutedText}" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding SelectedQuestion.Text, UpdateSourceTrigger=PropertyChanged}"
-                                         MinHeight="60" AcceptsReturn="True" TextWrapping="Wrap"
-                                         ToolTip="Παράδειγμα: Να συμπληρώσετε τα κενά στις παρακάτω προτάσεις."/>
-
-                                <TextBlock Text="Προτάσεις συμπλήρωσης κενού" FontWeight="SemiBold" Margin="0,13,0,4"/>
-                                <TextBlock Text="Σε κάθε πρόταση μπορείς να δημιουργήσεις όσα κενά χρειάζονται. Επίλεξε μία λέξη ή φράση και πάτησε «Κάνε κενό»."
-                                           Style="{StaticResource MutedText}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,7"/>
-
-                                <ItemsControl ItemsSource="{Binding SelectedQuestion.FillBlankSentences}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6"
-                                                    Padding="10" Margin="0,0,0,9">
-                                                <StackPanel>
-                                                    <DockPanel Margin="0,0,0,5">
-                                                        <Button DockPanel.Dock="Right" Content="Διαγραφή πρότασης"
-                                                                Style="{StaticResource DangerButton}" Padding="10,4"
-                                                                Command="{Binding DataContext.DeleteFillBlankSentenceCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                CommandParameter="{Binding}"/>
-                                                        <TextBlock Text="Πρόταση" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                                    </DockPanel>
-
-                                                    <TextBox x:Name="FillBlankSentenceEditor"
-                                                             Text="{Binding MarkedText, UpdateSourceTrigger=PropertyChanged}"
-                                                             MinHeight="75" AcceptsReturn="True" TextWrapping="Wrap"
-                                                             VerticalContentAlignment="Top"/>
-                                                    <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
-                                                        <Button Content="Κάνε κενό το επιλεγμένο κείμενο"
-                                                                Click="UseSelectedBlank_Click"
-                                                                Tag="{Binding ElementName=FillBlankSentenceEditor}"
-                                                                Style="{StaticResource SecondaryButton}"/>
-                                                        <Button Content="Επαναφορά όλων των λέξεων"
-                                                                Click="RestoreFillBlankMarkers_Click"
-                                                                Style="{StaticResource SecondaryButton}"/>
+                                                <DockPanel Margin="0,12,0,7">
+                                                    <Button DockPanel.Dock="Right" Content="↻ Νέα τυχαία διάταξη"
+                                                            Command="{Binding ShuffleMatchingCommand}" Style="{StaticResource SecondaryButton}"/>
+                                                    <StackPanel>
+                                                        <TextBlock Text="Στοιχεία δύο στηλών" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="Οι στήλες ανακατεύονται ανεξάρτητα στην εκτύπωση."
+                                                                   Style="{StaticResource MutedText}" FontSize="11"/>
                                                     </StackPanel>
+                                                </DockPanel>
 
-                                                    <TextBlock Text="Προεπισκόπηση μαθητή" Style="{StaticResource MutedText}" Margin="0,9,0,4"/>
-                                                    <TextBox Text="{Binding StudentText, Mode=OneWay}" IsReadOnly="True"
-                                                             TextWrapping="Wrap" MinHeight="50"
-                                                             Background="{DynamicResource EditorBackgroundBrush}"/>
-                                                    <TextBlock Text="{Binding AnswerSummary, Mode=OneWay}" Style="{StaticResource MutedText}"
-                                                               FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="10"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                                            CornerRadius="6" Padding="10">
+                                                        <StackPanel>
+                                                            <TextBlock Text="ΣΤΗΛΗ Α" FontWeight="Bold" Margin="0,0,0,6"/>
+                                                            <ItemsControl ItemsSource="{Binding SelectedQuestion.MatchingLeftItems}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Grid Margin="0,3">
+                                                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                                            <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,7,0"/>
+                                                                            <Button Grid.Column="1" Content="×" Style="{StaticResource DangerButton}" Padding="9,4"
+                                                                                    Command="{Binding DataContext.DeleteMatchingLeftItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                                    CommandParameter="{Binding}"/>
+                                                                        </Grid>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                            <Button Content="+ Στοιχείο Στήλης Α" Command="{Binding AddMatchingLeftItemCommand}"
+                                                                    Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,7,0,0"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                    <Border Grid.Column="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                                            CornerRadius="6" Padding="10">
+                                                        <StackPanel>
+                                                            <TextBlock Text="ΣΤΗΛΗ Β" FontWeight="Bold" Margin="0,0,0,6"/>
+                                                            <ItemsControl ItemsSource="{Binding SelectedQuestion.MatchingRightItems}">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Grid Margin="0,3">
+                                                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                                            <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,7,0"/>
+                                                                            <Button Grid.Column="1" Content="×" Style="{StaticResource DangerButton}" Padding="9,4"
+                                                                                    Command="{Binding DataContext.DeleteMatchingRightItemCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                                    CommandParameter="{Binding}"/>
+                                                                        </Grid>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                            <Button Content="+ Στοιχείο Στήλης Β" Command="{Binding AddMatchingRightItemCommand}"
+                                                                    Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,7,0,0"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </Grid>
+
+                                                <TextBlock Text="Σωστές σχέσεις" FontWeight="SemiBold" Margin="0,14,0,5"/>
+                                                <TextBlock Text="Πρόσθεσε ξεχωριστή σχέση για κάθε σωστή αντιστοίχιση. Επιτρέπονται πολλαπλές σχέσεις ανά στοιχείο."
+                                                           Style="{StaticResource MutedText}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                                <ItemsControl ItemsSource="{Binding SelectedQuestion.MatchingRelations}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="0,3">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*"/><ColumnDefinition Width="38"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <ComboBox ItemsSource="{Binding DataContext.SelectedQuestion.MatchingLeftItems, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                          DisplayMemberPath="Text" SelectedValuePath="Id"
+                                                                          SelectedValue="{Binding LeftItemId, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,7,0"/>
+                                                                <TextBlock Grid.Column="1" Text="→" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                <ComboBox Grid.Column="2"
+                                                                          ItemsSource="{Binding DataContext.SelectedQuestion.MatchingRightItems, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                          DisplayMemberPath="Text" SelectedValuePath="Id"
+                                                                          SelectedValue="{Binding RightItemId, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,7,0"/>
+                                                                <Button Grid.Column="3" Content="×" Style="{StaticResource DangerButton}" Padding="9,4"
+                                                                        Command="{Binding DataContext.DeleteMatchingRelationCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <Button Content="+ Προσθήκη σωστής σχέσης" Command="{Binding AddMatchingRelationCommand}"
+                                                        Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+                                            </StackPanel>
+
+                                            <!-- MULTIPLE CHOICE -->
+                                            <StackPanel>
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding SelectedQuestion.Type}" Value="{x:Static models:QuestionType.MultipleChoice}">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Πολλαπλής επιλογής" Style="{StaticResource EditorSectionTitle}"/>
+                                                <TextBlock Text="Εκφώνηση ερώτησης" Style="{StaticResource MutedText}" Margin="0,8,0,5"/>
+                                                <TextBox Text="{Binding SelectedQuestion.Text, UpdateSourceTrigger=PropertyChanged}"
+                                                         MinHeight="75" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"/>
+                                                <TextBlock Text="Επιλογές απάντησης — σημείωσε μία ως σωστή για το κλειδί λύσεων"
+                                                           FontWeight="SemiBold" Margin="0,12,0,6"/>
+                                                <ItemsControl ItemsSource="{Binding SelectedQuestion.MultipleChoiceOptions}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="0,3">
+                                                                <Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                                <RadioButton Content="Σωστή" VerticalAlignment="Center"
+                                                                             IsChecked="{Binding IsCorrect, Mode=OneWay}"
+                                                                             Command="{Binding DataContext.SetCorrectMultipleChoiceOptionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                             CommandParameter="{Binding}"/>
+                                                                <TextBox Grid.Column="1" Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0"/>
+                                                                <Button Grid.Column="2" Content="×" Style="{StaticResource DangerButton}" Padding="9,4"
+                                                                        Command="{Binding DataContext.DeleteMultipleChoiceOptionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                        CommandParameter="{Binding}"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Text="Η σωστή επιλογή αποθηκεύεται μόνο στο κλειδί λύσεων και δεν επισημαίνεται στο μαθητικό έντυπο."
+                                                           Style="{StaticResource MutedText}" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                                                <Button Content="+ Προσθήκη επιλογής" Command="{Binding AddMultipleChoiceOptionCommand}"
+                                                        Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+                                            </StackPanel>
+
+                                            <!-- FILL BLANK -->
+                                            <StackPanel>
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding SelectedQuestion.Type}" Value="{x:Static models:QuestionType.FillBlank}">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBlock Text="Συμπλήρωση κενού" Style="{StaticResource EditorSectionTitle}"/>
+                                                <TextBlock Text="Οδηγία ερώτησης" Style="{StaticResource MutedText}" Margin="0,8,0,5"/>
+                                                <TextBox Text="{Binding SelectedQuestion.Text, UpdateSourceTrigger=PropertyChanged}"
+                                                         MinHeight="60" AcceptsReturn="True" TextWrapping="Wrap"/>
+                                                <TextBlock Text="Προτάσεις συμπλήρωσης κενού" FontWeight="SemiBold" Margin="0,13,0,4"/>
+                                                <TextBlock Text="Επίλεξε μία λέξη ή φράση και πάτησε «Κάνε κενό». Μπορείς να δημιουργήσεις πολλά κενά στην ίδια πρόταση."
+                                                           Style="{StaticResource MutedText}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,7"/>
+                                                <ItemsControl ItemsSource="{Binding SelectedQuestion.FillBlankSentences}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6"
+                                                                    Padding="10" Margin="0,0,0,9">
+                                                                <StackPanel>
+                                                                    <DockPanel Margin="0,0,0,5">
+                                                                        <Button DockPanel.Dock="Right" Content="Διαγραφή πρότασης"
+                                                                                Style="{StaticResource DangerButton}" Padding="10,4"
+                                                                                Command="{Binding DataContext.DeleteFillBlankSentenceCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                                CommandParameter="{Binding}"/>
+                                                                        <TextBlock Text="Πρόταση" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                                    </DockPanel>
+                                                                    <TextBox x:Name="FillBlankSentenceEditor"
+                                                                             Text="{Binding MarkedText, UpdateSourceTrigger=PropertyChanged}"
+                                                                             MinHeight="75" AcceptsReturn="True" TextWrapping="Wrap"
+                                                                             VerticalContentAlignment="Top"/>
+                                                                    <WrapPanel Margin="0,7,0,0">
+                                                                        <Button Content="Κάνε κενό το επιλεγμένο κείμενο" Click="UseSelectedBlank_Click"
+                                                                                Tag="{Binding ElementName=FillBlankSentenceEditor}"
+                                                                                Style="{StaticResource SecondaryButton}"/>
+                                                                        <Button Content="Επαναφορά όλων των λέξεων" Click="RestoreFillBlankMarkers_Click"
+                                                                                Style="{StaticResource SecondaryButton}"/>
+                                                                    </WrapPanel>
+                                                                    <TextBlock Text="Προεπισκόπηση μαθητή" Style="{StaticResource MutedText}" Margin="0,9,0,4"/>
+                                                                    <TextBox Text="{Binding StudentText, Mode=OneWay}" IsReadOnly="True"
+                                                                             TextWrapping="Wrap" MinHeight="50"
+                                                                             Background="{DynamicResource EditorBackgroundBrush}"/>
+                                                                    <TextBlock Text="{Binding AnswerSummary, Mode=OneWay}" Style="{StaticResource MutedText}"
+                                                                               FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                                                                </StackPanel>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <Button Content="+ Προσθήκη πρότασης" Command="{Binding AddFillBlankSentenceCommand}"
+                                                        Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </TabItem>
+
+                                <TabItem Header="Ρυθμίσεις &amp; λύση" Style="{StaticResource EditorTabItem}">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="14">
+                                        <StackPanel>
+                                            <TextBlock Text="Χώρος απάντησης και κλειδί λύσεων" Style="{StaticResource EditorSectionTitle}"/>
+                                            <TextBlock Text="Οι σωστές απαντήσεις για Σ/Λ, πολλαπλής, αντιστοίχιση και συμπλήρωση κενού ορίζονται στην καρτέλα Περιεχόμενο."
+                                                       Style="{StaticResource MutedText}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,12"/>
+
+                                            <Border Style="{StaticResource EditorCard}">
+                                                <StackPanel>
+                                                    <TextBlock Text="Ρυθμίσεις ερώτησης ανάπτυξης" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="Οι παρακάτω επιλογές χρησιμοποιούνται μόνο όταν ο τύπος είναι Ανάπτυξης."
+                                                               Style="{StaticResource MutedText}" FontSize="11" Margin="0,3,0,10"/>
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="140"/></Grid.ColumnDefinitions>
+                                                        <StackPanel>
+                                                            <TextBlock Text="Χώρος απάντησης" Style="{StaticResource MutedText}"/>
+                                                            <ComboBox ItemsSource="{Binding AnswerAreaTypes}" DisplayMemberPath="Label" SelectedValuePath="Value"
+                                                                      SelectedValue="{Binding SelectedQuestion.AnswerAreaType}" Margin="0,5,8,0"/>
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="1">
+                                                            <TextBlock Text="Ύψος σε γραμμές" Style="{StaticResource MutedText}"/>
+                                                            <TextBox Text="{Binding SelectedQuestion.AnswerLines, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,0"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <TextBlock Text="Ενδεικτική απάντηση για το κλειδί λύσεων" Style="{StaticResource MutedText}" Margin="0,12,0,5"/>
+                                                    <TextBox Text="{Binding SelectedQuestion.ModelAnswer, UpdateSourceTrigger=PropertyChanged}"
+                                                             MinHeight="150" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"/>
                                                 </StackPanel>
                                             </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <Button Content="+ Προσθήκη πρότασης" Command="{Binding AddFillBlankSentenceCommand}"
-                                        Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"/>
-                            </StackPanel>
 
-                            <Border Margin="0,14,0,0" Padding="12" CornerRadius="6" Background="{DynamicResource AccentSoftBrush}">
-                                <Grid>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Σύνολο διαγωνίσματος: " FontWeight="SemiBold"/>
-                                        <TextBlock Text="{Binding Exam.TotalPoints}" FontWeight="Bold"/>
-                                        <TextBlock Text=" / 100 μονάδες"/>
+
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </TabItem>
+
+
+                            </TabControl>
+
+                            <!-- Fixed properties panel. -->
+                            <Border Grid.Column="2" Style="{StaticResource EditorPropertiesPanel}">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <StackPanel>
+                                        <TextBlock Text="Ιδιότητες" Style="{StaticResource EditorSectionTitle}"/>
+                                        <TextBlock Text="Παραμένουν ορατές σε όλες τις καρτέλες."
+                                                   Style="{StaticResource MutedText}" FontSize="10.5" Margin="0,2,0,12"/>
+
+                                        <TextBlock Text="Κωδικός" Style="{StaticResource MutedText}"/>
+                                        <TextBox Text="{Binding SelectedQuestion.Code, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,10"/>
+
+                                        <TextBlock Text="Μονάδες" Style="{StaticResource MutedText}"/>
+                                        <TextBox Text="{Binding SelectedQuestion.Points, UpdateSourceTrigger=PropertyChanged}" Margin="0,5,0,10"/>
+
+                                        <TextBlock Text="Τύπος ερώτησης" Style="{StaticResource MutedText}"/>
+                                        <ComboBox ItemsSource="{Binding QuestionTypes}" DisplayMemberPath="Label"
+                                                  SelectedValuePath="Value" SelectedValue="{Binding SelectedQuestion.Type}"
+                                                  Margin="0,5,0,12"/>
+
+                                        <Separator/>
+
+                                        <TextBlock Text="Θέμα" Style="{StaticResource MutedText}" Margin="0,4,0,0"/>
+                                        <TextBlock Text="{Binding SelectedSection.Title}" FontWeight="SemiBold" FontSize="14" Margin="0,4,0,0"/>
+                                        <TextBlock Margin="0,3,0,9">
+                                            <Run Text="Σύνολο: "/>
+                                            <Run Text="{Binding SelectedSection.TotalPoints, Mode=OneWay}" FontWeight="Bold"/>
+                                            <Run Text=" μονάδες"/>
+                                        </TextBlock>
+                                        <Button Content="⚙ Ρυθμίσεις θέματος…" Click="OpenSectionSettings_Click"
+                                                Tag="{Binding SelectedSection}" Style="{StaticResource SecondaryButton}"
+                                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+
+                                        <Separator Margin="0,12"/>
+
+                                        <TextBlock Text="Γρήγορη εικόνα" FontWeight="SemiBold"/>
+                                        <TextBlock Margin="0,7,0,0" Style="{StaticResource MutedText}">
+                                            <Run Text="Εικόνες ερώτησης: "/>
+                                            <Run Text="{Binding SelectedQuestion.Images.Count, Mode=OneWay}" FontWeight="SemiBold"/>
+                                        </TextBlock>
+                                        <TextBlock Margin="0,5,0,0" Style="{StaticResource MutedText}">
+                                            <Run Text="Διαγώνισμα: "/>
+                                            <Run Text="{Binding Exam.TotalPoints, Mode=OneWay}" FontWeight="SemiBold"/>
+                                            <Run Text=" / 100"/>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding TotalStatus}" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,9,0,0"/>
                                     </StackPanel>
-                                    <TextBlock Text="{Binding TotalStatus}" HorizontalAlignment="Right" FontWeight="SemiBold"/>
-                                </Grid>
+                                </ScrollViewer>
                             </Border>
+                        </Grid>
+                    </DockPanel>
+                </Border>
+
+
+                            </Grid>
+
+                            <Border Grid.Row="2" Padding="24">
+                                <Border.Style>
+                                    <Style TargetType="Border" BasedOn="{StaticResource PanelBorder}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasSelectedQuestion}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="Δεν υπάρχει υποερώτημα" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Πρόσθεσε υποερώτημα από το αριστερό panel για να εμφανιστεί ο editor."
+                                               Style="{StaticResource MutedText}" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </TabItem>
+                    <TabItem Header="Εικόνες" Style="{StaticResource EditorTabItem}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
+                            <StackPanel>
+                                <TextBlock Text="Εικόνες και διαγράμματα" FontSize="19" FontWeight="SemiBold"/>
+                                <TextBlock Text="Διαχειρίσου χωριστά τις εικόνες του κεντρικού ερωτήματος και του επιλεγμένου υποερωτήματος."
+                                           Style="{StaticResource MutedText}" Margin="0,3,0,12"/>
+
+                                <views:ImageEditorControl Title="Εικόνες κεντρικού ερωτήματος / θέματος"
+                                                          Images="{Binding SelectedSection.Images}"/>
+
+                                <Border Margin="0,12,0,0">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasSelectedQuestion}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <views:ImageEditorControl Title="Εικόνες επιλεγμένου υποερωτήματος"
+                                                              Images="{Binding SelectedQuestion.Images}"/>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+                </TabControl>
+
+                <!-- Sticky totals bar. -->
+                <Border Grid.Row="2" Margin="18,0,18,12" Padding="12,9" CornerRadius="7"
+                        Background="{DynamicResource AccentSoftBrush}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding SelectedSection.Title}" FontWeight="SemiBold"/>
+                            <TextBlock Text=": " FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding SelectedSection.TotalPoints, Mode=OneWay}" FontWeight="Bold"/>
+                            <TextBlock Text=" μονάδες"/>
                         </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="18,0">
+                            <TextBlock Text="Διαγώνισμα: " FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding Exam.TotalPoints, Mode=OneWay}" FontWeight="Bold"/>
+                            <TextBlock Text=" / 100"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{Binding TotalStatus}" FontWeight="SemiBold"/>
+                    </Grid>
+                </Border>
+            </Grid>
 
             <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch"
                           Background="{DynamicResource BorderBrush}" ResizeDirection="Columns"
